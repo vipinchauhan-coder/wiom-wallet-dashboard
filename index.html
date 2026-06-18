@@ -1,0 +1,1537 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>CSP Wallet Dashboard | Wiom</title>
+<script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<style>
+:root{
+  --bg:#0d1117;--bg2:#161b22;--bg3:#1c2230;--bg4:#21283a;
+  --bdr:#2d3748;--bdr2:#3d4d65;
+  --txt:#e2e8f0;--txt2:#94a3b8;--txt3:#64748b;
+  --blue:#3b82f6;--blue-d:#1d4ed8;--blue-g:rgba(59,130,246,.18);
+  --green:#22c55e;--green-g:rgba(34,197,94,.15);
+  --red:#ef4444;--red-g:rgba(239,68,68,.15);
+  --orange:#f59e0b;--orange-g:rgba(245,158,11,.15);
+  --purple:#a855f7;--purple-g:rgba(168,85,247,.15);
+  --teal:#06b6d4;--teal-g:rgba(6,182,212,.15);
+  --hdr-h:56px; --fb-h:52px;
+  --c1:145px;--c2:240px;
+  --r:8px;--rl:12px;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg);color:var(--txt);font-size:13px;line-height:1.5;}
+::-webkit-scrollbar{width:6px;height:6px;}
+::-webkit-scrollbar-track{background:var(--bg2);}
+::-webkit-scrollbar-thumb{background:var(--bdr2);border-radius:3px;}
+
+/* LOADER */
+#lov{display:none;position:fixed;inset:0;background:rgba(13,17,23,.92);z-index:9000;align-items:center;justify-content:center;flex-direction:column;gap:14px;backdrop-filter:blur(4px);}
+.spin{width:44px;height:44px;border:3px solid var(--bg3);border-top-color:var(--blue);border-radius:50%;animation:spin .7s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg);}}
+.spin-lbl{font-size:12px;color:var(--txt2);}
+
+/* TOAST */
+#toast{position:fixed;bottom:22px;right:22px;background:#0f172a;color:var(--txt);padding:11px 16px;border-radius:var(--r);font-size:12px;box-shadow:0 8px 32px rgba(0,0,0,.6);transform:translateY(80px);opacity:0;transition:all .3s;z-index:9999;max-width:360px;border:1px solid var(--bdr);}
+#toast.show{transform:translateY(0);opacity:1;}
+#toast.success{border-left:3px solid var(--green);}
+#toast.error{border-left:3px solid var(--red);}
+#toast.info{border-left:3px solid var(--blue);}
+/* MODAL */
+#modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:9500;align-items:center;justify-content:center;backdrop-filter:blur(4px);}
+#modal.show{display:flex;}
+.modal-box{background:var(--bg2);border:1px solid var(--bdr);border-radius:var(--rl);padding:30px;max-width:370px;width:90%;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.8);}
+.modal-box h3{font-size:16px;font-weight:700;color:var(--red);margin-bottom:8px;}
+.modal-box p{font-size:13px;color:var(--txt2);margin-bottom:20px;line-height:1.6;}
+.modal-btns{display:flex;gap:10px;justify-content:center;}
+
+/* HEADER — sticky */
+.hdr{background:linear-gradient(135deg,#0d1117 0%,#1a2744 100%);border-bottom:1px solid var(--bdr);padding:0 20px;position:sticky;top:0;z-index:500;box-shadow:0 2px 16px rgba(0,0,0,.5);height:var(--hdr-h);}
+.hdr-inner{display:flex;align-items:center;justify-content:space-between;height:100%;gap:10px;}
+.hdr-left{display:flex;align-items:center;gap:10px;}
+.hdr-logo{width:32px;height:32px;background:linear-gradient(135deg,var(--blue),var(--blue-d));border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:17px;box-shadow:0 0 12px var(--blue-g);}
+.hdr-brand{font-size:17px;font-weight:800;background:linear-gradient(135deg,var(--blue),var(--teal));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+.badge{background:var(--blue-g);color:var(--blue);font-size:10px;font-weight:700;padding:2px 9px;border-radius:20px;border:1px solid rgba(59,130,246,.3);letter-spacing:.3px;}
+.hdr-right{display:flex;align-items:center;gap:7px;flex-wrap:wrap;}
+.last-upd{font-size:10px;color:var(--txt3);white-space:nowrap;}
+
+/* SYNC STATUS BADGE */
+.sync-badge{display:none;align-items:center;gap:5px;font-size:11px;font-weight:600;
+  padding:4px 10px;border-radius:20px;white-space:nowrap;border:1px solid;}
+.sync-badge.ok{background:var(--green-g);color:var(--green);border-color:rgba(34,197,94,.3);}
+.sync-badge.syncing{background:var(--blue-g);color:var(--blue);border-color:rgba(59,130,246,.3);}
+.sync-badge.err{background:var(--red-g);color:var(--red);border-color:rgba(239,68,68,.3);cursor:pointer;}
+.sync-badge.off{background:var(--bg3);color:var(--txt3);border-color:var(--bdr);}
+.sdot{width:7px;height:7px;border-radius:50%;flex-shrink:0;}
+.sdot.ok{background:var(--green);box-shadow:0 0 5px var(--green);}
+.sdot.spin-dot{background:var(--blue);animation:pulse 1s ease-in-out infinite;}
+.sdot.err{background:var(--red);}
+.sdot.off{background:var(--txt3);}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:.3;}}
+
+/* SETTINGS MODAL */
+#sm{display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:9500;
+  align-items:center;justify-content:center;backdrop-filter:blur(4px);}
+#sm.show{display:flex;}
+.sm-card{background:var(--bg2);border:1px solid var(--bdr);border-radius:var(--rl);
+  width:100%;max-width:480px;max-height:90vh;overflow-y:auto;
+  box-shadow:0 24px 64px rgba(0,0,0,.8);}
+.sm-hdr{display:flex;align-items:center;justify-content:space-between;
+  padding:18px 22px;border-bottom:1px solid var(--bdr);
+  background:linear-gradient(90deg,var(--bg3),var(--bg2));}
+.sm-hdr h3{font-size:15px;font-weight:700;color:var(--txt);}
+.sm-close{cursor:pointer;color:var(--txt3);font-size:20px;line-height:1;
+  background:none;border:none;padding:2px 6px;}
+.sm-close:hover{color:var(--txt);}
+.sm-body{padding:22px;}
+.sm-row{margin-bottom:16px;}
+.sm-label{display:block;font-size:11px;font-weight:700;color:var(--txt2);
+  text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;}
+.sm-inp{width:100%;padding:8px 12px;border:1px solid var(--bdr);border-radius:var(--r);
+  font-size:13px;color:var(--txt);background:var(--bg3);outline:none;
+  transition:border-color .2s;}
+.sm-inp:focus{border-color:var(--blue);box-shadow:0 0 0 2px var(--blue-g);}
+.sm-inp::placeholder{color:var(--txt3);}
+.sm-inp option{background:var(--bg2);}
+.sm-toggle-row{display:flex;align-items:center;justify-content:space-between;
+  background:var(--bg3);border:1px solid var(--bdr);border-radius:var(--r);
+  padding:10px 14px;margin-bottom:16px;}
+.sm-toggle-lbl{font-size:13px;font-weight:600;color:var(--txt);}
+.sm-toggle-sub{font-size:11px;color:var(--txt2);margin-top:2px;}
+/* toggle switch */
+.tog{position:relative;width:40px;height:22px;flex-shrink:0;}
+.tog input{opacity:0;width:0;height:0;}
+.tog-sl{position:absolute;inset:0;background:var(--bdr2);border-radius:22px;
+  cursor:pointer;transition:.3s;}
+.tog-sl:before{content:'';position:absolute;width:16px;height:16px;left:3px;top:3px;
+  background:#fff;border-radius:50%;transition:.3s;}
+.tog input:checked + .tog-sl{background:var(--blue);}
+.tog input:checked + .tog-sl:before{transform:translateX(18px);}
+.sm-footer{display:flex;gap:10px;padding:16px 22px;border-top:1px solid var(--bdr);
+  background:var(--bg3);}
+.sm-status{padding:10px 14px;border-radius:var(--r);font-size:12px;
+  margin-bottom:14px;display:none;line-height:1.6;}
+.sm-status.ok{background:var(--green-g);color:var(--green);border:1px solid rgba(34,197,94,.2);}
+.sm-status.err{background:var(--red-g);color:var(--red);border:1px solid rgba(239,68,68,.2);}
+.sm-status.info{background:var(--blue-g);color:var(--blue);border:1px solid rgba(59,130,246,.2);}
+.sm-divider{border:none;border-top:1px solid var(--bdr);margin:18px 0;}
+.sm-section-title{font-size:10px;font-weight:700;color:var(--txt3);
+  text-transform:uppercase;letter-spacing:.6px;margin-bottom:12px;}
+.sm-hint{font-size:10px;color:var(--txt3);margin-top:5px;line-height:1.4;}
+
+/* BUTTONS */
+.btn{display:inline-flex;align-items:center;gap:5px;padding:6px 13px;border-radius:var(--r);font-size:12px;font-weight:600;cursor:pointer;border:none;transition:all .2s;white-space:nowrap;}
+.btn-pri{background:var(--blue);color:#fff;}
+.btn-pri:hover{background:var(--blue-d);box-shadow:0 0 10px var(--blue-g);}
+.btn-ghost{background:transparent;color:var(--txt2);border:1px solid var(--bdr);}
+.btn-ghost:hover{background:var(--bg3);color:var(--txt);border-color:var(--bdr2);}
+.btn-warn{background:var(--orange-g);color:var(--orange);border:1px solid rgba(245,158,11,.3);}
+.btn-warn:hover{background:rgba(245,158,11,.25);}
+.btn-danger{background:var(--red-g);color:var(--red);border:1px solid rgba(239,68,68,.3);}
+.btn-danger:hover{background:rgba(239,68,68,.25);}
+.btn-success{background:var(--green-g);color:var(--green);border:1px solid rgba(34,197,94,.3);}
+.btn-success:hover{background:rgba(34,197,94,.25);box-shadow:0 0 8px var(--green-g);}
+.btn:disabled{opacity:.4;cursor:not-allowed;}
+.btn-upload{position:relative;}
+.btn-upload input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;}
+
+/* FILTER BAR — sticky below header, single row */
+.filter-bar{
+  background:var(--bg2);border-bottom:1px solid var(--bdr);
+  padding:8px 20px;display:flex;gap:8px;align-items:center;
+  position:sticky;top:var(--hdr-h);z-index:400;
+  box-shadow:0 2px 8px rgba(0,0,0,.3);
+  overflow-x:auto;flex-wrap:nowrap;
+  min-height:50px;
+}
+.filter-bar::-webkit-scrollbar{height:3px;}
+.filter-section{display:flex;align-items:center;gap:5px;flex-shrink:0;}
+.filter-sep{width:1px;height:24px;background:var(--bdr);margin:0 2px;flex-shrink:0;}
+.flbl{font-size:10px;font-weight:700;color:var(--txt3);text-transform:uppercase;letter-spacing:.6px;white-space:nowrap;}
+/* Base select */
+.fsel{padding:5px 8px;border:1px solid var(--bdr);border-radius:var(--r);font-size:12px;color:var(--txt);background:var(--bg3);cursor:pointer;outline:none;transition:border-color .2s;width:130px;flex-shrink:0;}
+.fsel:focus,.fsel:hover{border-color:var(--blue);}
+.fsel option{background:var(--bg2);}
+/* Specific widths */
+#f-period{width:130px;}
+#f-action{width:140px;}
+#f-remark{width:175px;} /* constrained — was expanding full width */
+#f-csp{width:130px;}
+#f-partner{width:130px;}
+.fdate{padding:5px 7px;border:1px solid var(--bdr);border-radius:var(--r);font-size:12px;color:var(--txt);background:var(--bg3);outline:none;transition:border-color .2s;cursor:pointer;width:130px;flex-shrink:0;}
+.fdate:focus{border-color:var(--blue);}
+.fdate::-webkit-calendar-picker-indicator{filter:invert(1);opacity:.5;}
+#custom-range{display:none;align-items:center;gap:5px;flex-shrink:0;}
+#custom-range.show{display:flex;}
+
+/* BANNER */
+.banner{padding:8px 20px;font-size:12px;font-weight:500;display:none;align-items:center;gap:10px;flex-wrap:wrap;}
+.banner.show{display:flex;}
+.banner.added{background:rgba(34,197,94,.08);color:var(--green);border-bottom:1px solid rgba(34,197,94,.2);}
+.banner.clean{background:var(--blue-g);color:var(--blue);border-bottom:1px solid rgba(59,130,246,.2);}
+.bclose{margin-left:auto;cursor:pointer;opacity:.5;font-size:15px;}
+.bclose:hover{opacity:1;}
+.mig-notice{background:var(--orange-g);color:var(--orange);padding:8px 20px;font-size:12px;display:none;align-items:center;gap:8px;border-bottom:1px solid rgba(245,158,11,.2);}
+.mig-notice.show{display:flex;}
+
+/* UPLOAD LANDING */
+#upload-landing{min-height:calc(100vh - var(--hdr-h));display:flex;align-items:center;justify-content:center;padding:40px 20px;background:radial-gradient(ellipse at top,#1a2744 0%,var(--bg) 60%);}
+.ucard{background:var(--bg2);border:1px solid var(--bdr);border-radius:var(--rl);width:100%;max-width:540px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.6);}
+.ucard-hdr{background:linear-gradient(135deg,#1a2744,#0d1b38);padding:22px 28px;border-bottom:1px solid var(--bdr);}
+.ucard-hdr h2{font-size:19px;font-weight:800;color:var(--txt);margin-bottom:4px;}
+.ucard-hdr p{font-size:12px;color:var(--txt2);}
+.ucard-body{padding:26px 28px;}
+.dzone{border:2px dashed var(--bdr);border-radius:var(--rl);padding:36px 20px;text-align:center;cursor:pointer;transition:all .25s;background:var(--bg3);position:relative;}
+.dzone:hover,.dzone.over{border-color:var(--blue);background:var(--blue-g);box-shadow:0 0 18px var(--blue-g);}
+.dzone input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;}
+.dzone-icon{font-size:40px;margin-bottom:10px;}
+.dzone-title{font-size:15px;font-weight:700;color:var(--txt);margin-bottom:6px;}
+.dzone-sub{font-size:12px;color:var(--txt2);line-height:1.7;}
+.ftypes{display:flex;justify-content:center;gap:8px;margin-top:14px;flex-wrap:wrap;}
+.ftype{background:var(--bg);border:1px solid var(--bdr);color:var(--txt3);font-size:11px;font-weight:700;padding:2px 10px;border-radius:20px;}
+.ustatus{margin-top:14px;padding:11px 14px;border-radius:var(--r);font-size:12px;display:none;line-height:1.6;}
+.ustatus.ok{background:var(--green-g);color:var(--green);border:1px solid rgba(34,197,94,.2);}
+.ustatus.err{background:var(--red-g);color:var(--red);border:1px solid rgba(239,68,68,.2);}
+.steps{margin-top:20px;padding-top:20px;border-top:1px solid var(--bdr);}
+.step-title{font-size:10px;font-weight:700;color:var(--txt3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px;}
+.step{display:flex;gap:10px;align-items:flex-start;margin-bottom:10px;}
+.snum{width:20px;height:20px;min-width:20px;background:var(--blue-g);color:var(--blue);border:1px solid rgba(59,130,246,.3);border-radius:50%;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;}
+.stxt{font-size:12px;color:var(--txt2);line-height:1.6;}
+.stxt a{color:var(--blue);text-decoration:none;font-weight:600;}
+.stxt strong{color:var(--txt);}
+
+/* DASHBOARD */
+#dashboard-body{display:none;}
+main{padding:16px 20px;}
+
+/* STATS */
+.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px;}
+.stat{background:var(--bg2);border:1px solid var(--bdr);border-radius:var(--rl);padding:14px 16px;position:relative;overflow:hidden;transition:all .2s;}
+.stat:hover{border-color:var(--bdr2);transform:translateY(-1px);box-shadow:0 4px 20px rgba(0,0,0,.3);}
+.stat::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;}
+.stat.s-blue::before{background:linear-gradient(90deg,var(--blue),var(--teal));}
+.stat.s-green::before{background:linear-gradient(90deg,var(--green),#16a34a);}
+.stat.s-orange::before{background:linear-gradient(90deg,var(--orange),#ea580c);}
+.stat.s-purple::before{background:linear-gradient(90deg,var(--purple),var(--blue));}
+.stat-ico{font-size:20px;margin-bottom:6px;display:block;}
+.stat-lbl{font-size:9px;font-weight:700;color:var(--txt3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:4px;}
+.stat-val{font-size:22px;font-weight:800;line-height:1;margin-bottom:3px;}
+.stat.s-blue .stat-val{color:var(--blue);}
+.stat.s-green .stat-val{color:var(--green);}
+.stat.s-orange .stat-val{color:var(--orange);}
+.stat.s-purple .stat-val{color:var(--purple);}
+.stat-sub{font-size:10px;color:var(--txt3);}
+
+/* CARD */
+.card{background:var(--bg2);border:1px solid var(--bdr);border-radius:var(--rl);margin-bottom:16px;overflow:hidden;}
+.card-hdr{
+  display:flex;align-items:center;justify-content:space-between;padding:12px 16px;
+  border-bottom:1px solid var(--bdr);gap:10px;flex-wrap:wrap;
+  background:linear-gradient(90deg,var(--bg3),var(--bg2));
+}
+.card-title{font-size:14px;font-weight:700;color:var(--txt);}
+.card-title span{font-weight:400;color:var(--blue);font-size:13px;}
+.card-hdr-right{display:flex;gap:7px;align-items:center;}
+.rec-count{font-size:11px;color:var(--txt3);background:var(--bg3);padding:3px 10px;border-radius:12px;border:1px solid var(--bdr);}
+
+/* PIVOT TABLE */
+.pivot-wrap{overflow-x:auto;overflow-y:auto;max-height:calc(100vh - 340px);min-height:200px;}
+table.pv{width:max-content;min-width:100%;border-collapse:collapse;font-size:12px;}
+
+/* STICKY THEAD — within pivot-wrap scroll */
+/* Row 1 sticks at top:0, Row 2 sticks at top:[row1-height] set by JS */
+table.pv thead tr:first-child th{
+  position:sticky;top:0;z-index:30;padding:0;
+  white-space:nowrap;
+  backface-visibility:hidden;-webkit-backface-visibility:hidden;
+  transform:translateZ(0);
+}
+table.pv thead tr:last-child th{
+  position:sticky;top:33px; /* updated by JS after render */
+  z-index:30;padding:0;
+  white-space:nowrap;
+  backface-visibility:hidden;-webkit-backface-visibility:hidden;
+  transform:translateZ(0);
+}
+/* Corner rowspan=2 cells */
+table.pv thead .hcol1{position:sticky;left:0;z-index:40 !important;}
+table.pv thead .hcol2{position:sticky;left:var(--c1);z-index:40 !important;border-right:2px solid var(--bdr2);}
+
+/* Header inner wrappers */
+.th-inner{
+  padding:9px 12px;font-size:10px;font-weight:700;
+  text-transform:uppercase;letter-spacing:.5px;color:var(--txt2);
+  background:var(--bg3);
+  border-bottom:2px solid var(--bdr2);
+}
+.hcol1 .th-inner{min-width:var(--c1);background:var(--bg3);}
+.hcol2 .th-inner{min-width:var(--c2);background:var(--bg3);}
+
+/* Month group header */
+.th-month-wrap{text-align:center;border-left:1px solid var(--bdr2);}
+.th-month-inner{
+  padding:8px 16px;
+  background:linear-gradient(135deg,#1e3a8a,var(--blue));
+  color:#fff;font-size:11px;font-weight:700;
+  text-align:center;min-width:200px;
+  border-bottom:1px solid rgba(59,130,246,.4);
+}
+/* Total group header */
+.th-total-wrap{text-align:center;border-left:2px solid var(--bdr2);}
+.th-total-inner{
+  padding:8px 16px;
+  background:linear-gradient(135deg,#0f172a,#1e293b);
+  color:var(--teal);font-size:11px;font-weight:700;
+  text-align:center;min-width:200px;
+  border-bottom:1px solid rgba(6,182,212,.3);
+}
+/* Sub-headers row */
+.th-sub-inner{
+  padding:7px 12px;font-size:10px;font-weight:700;
+  text-transform:uppercase;letter-spacing:.4px;
+  color:#93c5fd;background:rgba(30,58,138,.55);
+  border-left:1px solid rgba(59,130,246,.25);
+  text-align:right;min-width:85px;
+}
+.th-sub-inner.amt{border-right:1px solid rgba(59,130,246,.15);min-width:120px;}
+.th-sub-total-inner{
+  padding:7px 12px;font-size:10px;font-weight:700;
+  text-transform:uppercase;letter-spacing:.4px;
+  color:var(--teal);background:rgba(21,94,117,.4);
+  border-left:2px solid rgba(6,182,212,.3);
+  text-align:right;min-width:85px;
+}
+.th-sub-total-inner.amt{min-width:120px;}
+
+/* BODY CELLS */
+table.pv tbody td{padding:7px 11px;border-bottom:1px solid rgba(45,55,72,.6);vertical-align:middle;white-space:nowrap;transition:background .1s;}
+table.pv tbody tr:hover td{background:rgba(59,130,246,.04);}
+table.pv tbody tr:hover .dcol1,table.pv tbody tr:hover .dcol2{background:var(--bg4)!important;}
+
+.dcol1{
+  position:sticky;left:0;z-index:10;
+  background:var(--bg2);border-right:1px solid var(--bdr);
+  min-width:var(--c1);max-width:var(--c1);
+  backface-visibility:hidden;-webkit-backface-visibility:hidden;transform:translateZ(0);
+}
+.dcol2{
+  position:sticky;left:var(--c1);z-index:10;
+  background:var(--bg2);border-right:2px solid var(--bdr2);
+  min-width:var(--c2);max-width:var(--c2);
+  color:var(--txt2);overflow:hidden;text-overflow:ellipsis;
+  backface-visibility:hidden;-webkit-backface-visibility:hidden;transform:translateZ(0);
+}
+
+.num{text-align:right;font-variant-numeric:tabular-nums;font-family:'SF Mono','Fira Code',monospace;font-size:11px;}
+.gp{color:var(--green);font-weight:600;}
+.gn{color:var(--red);font-weight:600;}
+.cell-zero{color:var(--txt3);}
+.tc{background:rgba(15,23,42,.4);border-left:1px solid rgba(45,55,72,.4);}
+.ta{border-right:1px solid rgba(45,55,72,.3);}
+.ttc{background:rgba(6,182,212,.07);border-left:2px solid rgba(6,182,212,.2);font-weight:700;color:var(--teal);}
+.tta{background:rgba(6,182,212,.07);font-weight:700;}
+
+/* Subtotal */
+tr.sub-row td{background:rgba(59,130,246,.06)!important;border-top:1px dashed rgba(59,130,246,.2);}
+tr.sub-row .dcol1,tr.sub-row .dcol2{background:rgba(59,130,246,.1)!important;}
+tr.sub-row .ttc,tr.sub-row .tta{background:rgba(6,182,212,.12)!important;}
+
+/* Grand total — sticky bottom */
+tr.grand-total td{
+  background:linear-gradient(90deg,#0f172a,#0d1b38)!important;
+  color:var(--txt)!important;font-weight:700;
+  border-top:2px solid var(--bdr2);
+  position:sticky;bottom:0;z-index:11;
+  backface-visibility:hidden;-webkit-backface-visibility:hidden;transform:translateZ(0);
+}
+tr.grand-total .dcol1,tr.grand-total .dcol2{background:#0a1020!important;z-index:12;}
+tr.grand-total .ttc,tr.grand-total .tta{background:rgba(6,182,212,.15)!important;color:var(--teal)!important;}
+
+/* Action badges */
+.ab{display:inline-block;padding:2px 8px;border-radius:12px;font-size:11px;font-weight:700;letter-spacing:.2px;max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;vertical-align:middle;}
+.ab-cr{background:var(--green-g);color:var(--green);border:1px solid rgba(34,197,94,.3);}
+.ab-dr{background:var(--red-g);color:var(--red);border:1px solid rgba(239,68,68,.3);}
+.ab-tr{background:var(--purple-g);color:var(--purple);border:1px solid rgba(168,85,247,.3);}
+.ab-def{background:var(--bg3);color:var(--txt2);border:1px solid var(--bdr);}
+
+/* Toggle */
+.toggle{display:inline-flex;align-items:center;justify-content:center;width:17px;height:17px;border-radius:4px;border:1px solid var(--bdr2);background:var(--bg3);color:var(--txt2);font-size:14px;font-weight:700;cursor:pointer;transition:all .2s;margin-right:5px;line-height:1;flex-shrink:0;vertical-align:middle;}
+.toggle:hover{border-color:var(--blue);color:var(--blue);background:var(--blue-g);}
+.toggle.exp{border-color:rgba(59,130,246,.5);color:var(--blue);background:var(--blue-g);}
+
+/* Group separator */
+tr.grp-start td{border-top:2px solid var(--bdr2);}
+
+/* TRANSACTION TABLE */
+.txn-bar{display:flex;align-items:center;justify-content:center;padding:12px 20px 0;gap:10px;}
+#txn-card{display:none;margin-bottom:16px;}
+.txn-wrap{overflow-x:auto;overflow-y:auto;max-height:400px;}
+table.txn{width:max-content;min-width:100%;border-collapse:collapse;font-size:12px;}
+table.txn thead th{position:sticky;top:0;background:var(--bg3);color:var(--txt2);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;padding:8px 12px;border-bottom:1px solid var(--bdr);white-space:nowrap;z-index:5;backface-visibility:hidden;transform:translateZ(0);}
+table.txn tbody td{padding:6px 12px;border-bottom:1px solid rgba(45,55,72,.5);white-space:nowrap;vertical-align:middle;}
+table.txn tbody tr:hover td{background:rgba(59,130,246,.05);}
+table.txn .td-act{color:var(--txt);}
+table.txn .td-amt-p{color:var(--green);font-weight:600;font-family:'SF Mono','Fira Code',monospace;text-align:right;}
+table.txn .td-amt-n{color:var(--red);font-weight:600;font-family:'SF Mono','Fira Code',monospace;text-align:right;}
+table.txn .td-num{color:var(--txt3);text-align:right;font-family:'SF Mono','Fira Code',monospace;}
+.txn-empty{text-align:center;padding:30px;color:var(--txt3);}
+
+/* COMBOBOX (searchable ID inputs) */
+.combo-wrap{position:relative;display:flex;align-items:center;flex-shrink:0;}
+.combo-inp{
+  padding:5px 28px 5px 9px;border:1px solid var(--bdr);border-radius:var(--r);
+  font-size:12px;color:var(--txt);background:var(--bg3);
+  outline:none;transition:border-color .2s;width:145px;
+}
+.combo-inp:focus,.combo-inp:hover{border-color:var(--blue);}
+.combo-inp::placeholder{color:var(--txt3);}
+.combo-clear{position:absolute;right:6px;top:50%;transform:translateY(-50%);
+  cursor:pointer;color:var(--txt3);font-size:14px;line-height:1;display:none;
+  background:none;border:none;padding:0;}
+.combo-clear:hover{color:var(--txt);}
+/* native datalist dropdown dark */
+input[list]::-webkit-calendar-picker-indicator{opacity:0;pointer-events:none;}
+
+
+@media(max-width:900px){.stats-grid{grid-template-columns:repeat(2,1fr);}main{padding:10px;}}
+@media(max-width:560px){.stats-grid{grid-template-columns:1fr;}.last-upd{display:none;}}
+</style>
+</head>
+<body>
+
+
+
+
+<div id="lov"><div class="spin"></div><p class="spin-lbl" id="spin-lbl">Processing…</p></div>
+<div id="toast"></div>
+
+<!-- SETTINGS MODAL -->
+<div id="sm">
+  <div class="sm-card">
+    <div class="sm-hdr">
+      <h3>🔗 Connect to Metabase</h3>
+      <button class="sm-close" onclick="closeSM()">✕</button>
+    </div>
+    <div class="sm-body">
+
+      <div style="background:var(--blue-g);border:1px solid rgba(59,130,246,.2);border-radius:var(--r);padding:10px 14px;margin-bottom:18px;font-size:12px;color:var(--blue);line-height:1.5;">
+        🔗 Fetches directly from Metabase — no file upload needed.<br>
+        <span style="color:var(--txt3);">Data auto-refreshes on schedule after connecting.</span>
+      </div>
+      <input type="hidden" id="sm-enabled" value="1">
+
+      <div class="sm-section-title">Metabase Question URL</div>
+      <div class="sm-row">
+        <label class="sm-label">Paste Question Link</label>
+        <input class="sm-inp" id="sm-qurl" type="url"
+               placeholder="https://metabase.wiom.in/question/11227-…"
+               value="https://metabase.wiom.in/question/11227-new-csp-app-partner-wallet-transaction-report-prod-db-public-t-account-balance-sheet1-new?From=&amp;To=&amp;PARTNER_ID=&amp;CSP_ID=&amp;WALLET_SOURCE=NEW_WALLET"
+               style="font-size:11px;">
+        <div class="sm-hint">Base URL and Question ID are extracted automatically</div>
+      </div>
+
+      <hr class="sm-divider">
+      <div class="sm-section-title">Login Credentials</div>
+      <div class="sm-row">
+        <label class="sm-label">Email</label>
+        <input class="sm-inp" id="sm-email" type="email"
+               placeholder="you@wiom.in" autocomplete="username">
+      </div>
+      <div class="sm-row">
+        <label class="sm-label">Password</label>
+        <input class="sm-inp" id="sm-pass" type="password"
+               placeholder="••••••••" autocomplete="current-password">
+      </div>
+
+      <hr class="sm-divider">
+      <div class="sm-row">
+        <label class="sm-label">Refresh Every</label>
+        <select class="sm-inp" id="sm-interval">
+          <option value="15">Every 15 minutes</option>
+          <option value="30">Every 30 minutes</option>
+          <option value="60" selected>Every 1 hour</option>
+          <option value="120">Every 2 hours</option>
+          <option value="240">Every 4 hours</option>
+          <option value="1440">Once a day</option>
+        </select>
+      </div>
+
+      <!-- Status message -->
+      <div class="sm-status" id="sm-status"></div>
+    </div>
+    <div class="sm-footer">
+      <button class="btn btn-ghost" style="flex:1" onclick="testConnection()">🔌 Test Connection</button>
+      <button class="btn btn-pri" style="flex:1" onclick="saveSettings()">🔗 Connect &amp; Sync</button>
+    </div>
+  </div>
+</div>
+
+<!-- HEADER -->
+<header class="hdr">
+  <div class="hdr-inner">
+    <div class="hdr-left">
+      <div class="hdr-logo">📊</div>
+      <span class="hdr-brand">Wiom</span>
+      <span style="color:var(--txt2);font-size:13px;">CSP Wallet Dashboard</span>
+      <span class="badge">NEW_WALLET</span>
+    </div>
+    <div class="hdr-right">
+      <span class="last-upd" id="last-upd"></span>
+      <!-- Auto-sync status -->
+      <div class="sync-badge" id="sync-badge" title="Click to open settings" onclick="openSM()">
+        <span class="sdot" id="sync-dot"></span>
+        <span id="sync-lbl">Auto-sync</span>
+      </div>
+      <button class="btn btn-ghost" id="btn-sync" style="display:none;font-size:11px;" onclick="manualSync()">🔄 Sync Now</button>
+      <button class="btn btn-ghost" style="font-size:18px;padding:4px 8px;line-height:1;" onclick="openSM()" title="Auto-Sync Settings">⚙️</button>
+      <button class="btn btn-success" id="btn-exp" style="display:none" onclick="exportData()">⬇ Download (.xlsx)</button>
+      <label class="btn btn-warn btn-upload">
+        ⬆ Upload File
+        <input type="file" id="hdr-file" accept=".csv,.tsv,.txt,.xlsx,.xls" onchange="handleHdrUpload(event)">
+      </label>
+    </div>
+  </div>
+</header>
+
+<!-- FILTER BAR -->
+<div class="filter-bar" id="filter-bar" style="display:none;">
+  <div class="filter-section">
+    <span class="flbl">Period</span>
+    <select class="fsel" id="f-period" onchange="onPeriodChange()">
+      <option value="all">All Time</option>
+      <option value="today">Today</option>
+      <option value="yest">Yesterday</option>
+      <option value="thismon">This Month</option>
+      <option value="prevmon">Previous Month</option>
+      <option value="custom">Custom Range</option>
+    </select>
+  </div>
+  <div id="custom-range">
+    <span class="flbl">From</span>
+    <input type="date" class="fdate" id="f-from" onchange="applyFilters()">
+    <span class="flbl">To</span>
+    <input type="date" class="fdate" id="f-to" onchange="applyFilters()">
+  </div>
+
+  <div class="filter-sep"></div>
+
+  <div class="filter-section">
+    <span class="flbl">Action</span>
+    <select class="fsel" id="f-action" onchange="onActionChange()">
+      <option value="">All Actions</option>
+    </select>
+  </div>
+  <div class="filter-section">
+    <span class="flbl">Remarks</span>
+    <select class="fsel" id="f-remark" onchange="applyFilters()">
+      <option value="">All Remarks</option>
+    </select>
+  </div>
+
+  <div class="filter-sep"></div>
+
+  <!-- CSP ID combobox: type/paste or pick from list -->
+  <div class="filter-section">
+    <span class="flbl">CSP ID</span>
+    <div class="combo-wrap">
+      <input class="combo-inp" id="f-csp" list="dl-csp"
+             placeholder="Paste or select…"
+             oninput="onComboInput('f-csp')" onchange="applyFilters()">
+      <datalist id="dl-csp"></datalist>
+      <button class="combo-clear" id="f-csp-x" onclick="clearCombo('f-csp')">✕</button>
+    </div>
+  </div>
+
+  <!-- Partner ID combobox -->
+  <div class="filter-section">
+    <span class="flbl">Partner ID</span>
+    <div class="combo-wrap">
+      <input class="combo-inp" id="f-partner" list="dl-partner"
+             placeholder="Paste or select…"
+             oninput="onComboInput('f-partner')" onchange="applyFilters()">
+      <datalist id="dl-partner"></datalist>
+      <button class="combo-clear" id="f-partner-x" onclick="clearCombo('f-partner')">✕</button>
+    </div>
+  </div>
+
+  <div class="filter-section" style="margin-left:auto;flex-shrink:0;">
+    <button class="btn btn-ghost" style="font-size:11px;" onclick="resetFilters()">↺ Reset</button>
+  </div>
+</div>
+
+<!-- BANNERS -->
+<div class="banner" id="banner"><span id="banner-msg"></span><span class="bclose" onclick="this.parentElement.className='banner'">✕</span></div>
+<div class="mig-notice" id="mig">⚠️ Database upgraded — previous data cleared. Please re-upload your files.<span class="bclose" style="margin-left:auto" onclick="this.parentElement.classList.remove('show')">✕</span></div>
+
+<!-- UPLOAD LANDING -->
+<div id="upload-landing">
+  <div class="ucard">
+    <div class="ucard-hdr">
+      <h2>📂 Upload Wallet Report</h2>
+      <p>Upload CSV or Excel from Metabase — stored permanently in browser</p>
+    </div>
+    <div class="ucard-body">
+      <div class="dzone" id="dzone"
+           ondragover="event.preventDefault();this.classList.add('over')"
+           ondragleave="this.classList.remove('over')"
+           ondrop="handleDrop(event)">
+        <input type="file" id="land-file" accept=".csv,.tsv,.txt,.xlsx,.xls" onchange="handleLandUpload(event)">
+        <div class="dzone-icon">📤</div>
+        <div class="dzone-title">Drop file here or click to browse</div>
+        <div class="dzone-sub">Dedup key: <strong style="color:var(--blue)">ID + ADDED_TIME + CSP_ID</strong><br>Data persists across sessions — upload any time to add new records</div>
+        <div class="ftypes"><span class="ftype">.CSV</span><span class="ftype">.XLSX</span><span class="ftype">.XLS</span><span class="ftype">.TSV</span></div>
+      </div>
+      <div class="ustatus" id="ustatus"></div>
+      <div class="steps">
+        <div class="step-title">How to get the file</div>
+        <div class="step"><div class="snum">1</div><div class="stxt">Open <a href="https://metabase.wiom.in/question/11227" target="_blank" style="color:var(--blue)">Report #11227</a> on Metabase → WALLET_SOURCE = NEW_WALLET</div></div>
+        <div class="step"><div class="snum">2</div><div class="stxt">Click <strong>Download ↓</strong> → CSV or Excel (.xlsx)</div></div>
+        <div class="step"><div class="snum">3</div><div class="stxt">Drop or click above to upload</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- DASHBOARD -->
+<div id="dashboard-body">
+  <main>
+    <div class="stats-grid">
+      <div class="stat s-blue"><span class="stat-ico">🔢</span><div class="stat-lbl">Total Transactions</div><div class="stat-val" id="s-txns">—</div><div class="stat-sub" id="s-txns-s"> </div></div>
+      <div class="stat s-green"><span class="stat-ico">₹</span><div class="stat-lbl">Total Amount</div><div class="stat-val" id="s-amt">—</div><div class="stat-sub" id="s-amt-s"> </div></div>
+      <div class="stat s-orange"><span class="stat-ico">📅</span><div class="stat-lbl">Active Months</div><div class="stat-val" id="s-mon">—</div><div class="stat-sub" id="s-mon-s"> </div></div>
+      <div class="stat s-purple"><span class="stat-ico">⚡</span><div class="stat-lbl">Unique Actions</div><div class="stat-val" id="s-act">—</div><div class="stat-sub" id="s-act-s"> </div></div>
+    </div>
+
+    <!-- Pivot Card -->
+    <div class="card">
+      <div class="card-hdr">
+        <span class="card-title" id="pivot-title">CSP Wallet Journey — <span>Overall</span></span>
+        <div class="card-hdr-right">
+          <span class="rec-count" id="pivot-sub"></span>
+          <button class="btn btn-ghost" style="font-size:11px;padding:4px 10px;" onclick="expandAll()">Expand All</button>
+          <button class="btn btn-ghost" style="font-size:11px;padding:4px 10px;" onclick="collapseAll()">Collapse All</button>
+        </div>
+      </div>
+      <div class="pivot-wrap" id="pivot-wrap">
+        <table class="pv" id="pivot-table">
+          <thead id="pv-thead"></thead>
+          <tbody id="pv-tbody"><tr><td class="cell-zero" style="padding:40px;text-align:center" colspan="4">Upload a file to load data…</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Txn toggle button -->
+    <div class="txn-bar">
+      <button class="btn btn-pri" id="btn-txn" style="display:none" onclick="toggleTxn()">📋 Show Transactions</button>
+    </div>
+
+    <!-- Txn Detail Card -->
+    <div class="card" id="txn-card">
+      <div class="card-hdr" style="position:relative;top:auto;z-index:1;box-shadow:none;">
+        <span class="card-title">Transaction Detail <span id="txn-count-lbl"></span></span>
+        <div class="card-hdr-right">
+          <button class="btn btn-ghost" style="font-size:11px;padding:4px 10px;" onclick="toggleTxn()">✕ Close</button>
+        </div>
+      </div>
+      <div class="txn-wrap">
+        <table class="txn">
+          <thead><tr>
+            <th>#</th><th>Date / Time</th><th>ID</th>
+            <th>CSP ID</th><th>Partner ID</th>
+            <th>Action</th><th>Remark</th><th style="text-align:right">Amount (₹)</th>
+          </tr></thead>
+          <tbody id="txn-tbody"><tr><td class="txn-empty" colspan="8">No data</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script>
+'use strict';
+/* ── CONSTANTS ─────────────────────────────── */
+const WALLET  = 'NEW_WALLET';
+const DB_NAME = 'WiomWalletDB';
+const DB_VER  = 3;
+const STORE   = 'transactions';
+const PERIOD_LABELS = {all:'Overall',today:'Today',yest:'Yesterday',thismon:'This Month',prevmon:'Previous Month',custom:'Custom Range'};
+
+// Actions to merge in the PIVOT display only (original names kept in Transactions view/download)
+const PIVOT_MERGE = {'WITHDRAWAL_DEBIT':'WITHDRAWAL','WITHDRAWAL':'WITHDRAWAL'};
+const pivotAction = a => PIVOT_MERGE[a] || a;
+
+/* ── STATE ─────────────────────────────────── */
+const S = {
+  db:null, raw:[], filtered:[],
+  expanded:{},   // action → bool (default false = collapsed)
+  txnOpen:false
+};
+
+/* ── DB ────────────────────────────────────── */
+function openDB(){
+  return new Promise((res,rej)=>{
+    const req=indexedDB.open(DB_NAME,DB_VER);
+    req.onupgradeneeded=e=>{
+      const db=e.target.result;
+      if(db.objectStoreNames.contains(STORE)) db.deleteObjectStore(STORE);
+      db.createObjectStore(STORE,{keyPath:'_key'}).createIndex('date','dateISO',{unique:false});
+      if(e.oldVersion>0) sessionStorage.setItem('migrated','1');
+    };
+    req.onsuccess=e=>res(e.target.result);
+    req.onerror=e=>rej(e.target.error);
+  });
+}
+const dbAll  =db=>new Promise((r,j)=>{const q=db.transaction(STORE,'readonly').objectStore(STORE).getAll();q.onsuccess=e=>r(e.target.result);q.onerror=e=>j(e.target.error);});
+const dbCount=db=>new Promise((r,j)=>{const q=db.transaction(STORE,'readonly').objectStore(STORE).count();q.onsuccess=e=>r(e.target.result);q.onerror=e=>j(e.target.error);});
+const dbClear=db=>new Promise((r,j)=>{const q=db.transaction(STORE,'readwrite').objectStore(STORE).clear();q.onsuccess=()=>r();q.onerror=e=>j(e.target.error);});
+function dbPut(db,rows){return new Promise((r,j)=>{const tx=db.transaction(STORE,'readwrite'),st=tx.objectStore(STORE);rows.forEach(row=>st.put(row));tx.oncomplete=()=>r();tx.onerror=e=>j(e.target.error);});}
+
+/* ── HELPERS ───────────────────────────────── */
+const $ =id=>document.getElementById(id);
+const sl=(m)=>{$('spin-lbl').textContent=m||'Processing…';$('lov').style.display='flex';};
+const hl=()=>{$('lov').style.display='none';};
+const esc=s=>String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+
+function toast(msg,type='info'){
+  const el=$('toast');el.textContent=msg;el.className=`show ${type}`;
+  clearTimeout(el._t);el._t=setTimeout(()=>{el.className='';},4000);
+}
+function fmt(n){n=parseFloat(n)||0;const a=Math.abs(n);if(a>=1e7) return (n/1e7).toFixed(2)+' Cr';if(a>=1e5) return (n/1e5).toFixed(2)+' L';if(a>=1e3) return (n/1e3).toFixed(1)+' K';return n.toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2});}
+function ff(n){return (parseFloat(n)||0).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2});}
+function mKey(d){return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;}
+function mLbl(d){return d.toLocaleString('en-IN',{month:'short',year:'numeric'});}
+function abCls(a){const u=String(a).toUpperCase();if(u.includes('CREDIT')) return 'ab-cr';if(u.includes('DEBIT')||u.includes('WITHDRAWAL')) return 'ab-dr';if(u.includes('TRANSFER')||u.includes('REFUND')||u.includes('REVERSAL')) return 'ab-tr';return 'ab-def';}
+function ab(a){return `<span class="ab ${abCls(a)}" title="${esc(a)}">${esc(a)}</span>`;}
+
+/* ── SHOW / HIDE ───────────────────────────── */
+function showDash(){
+  $('upload-landing').style.display='none';
+  $('dashboard-body').style.display='block';
+  $('filter-bar').style.display='flex';
+  $('btn-exp').style.display='';
+}
+function showLand(){
+  $('upload-landing').style.display='flex';
+  $('dashboard-body').style.display='none';
+  $('filter-bar').style.display='none';
+  $('btn-exp').style.display='none';
+}
+
+/* ── DATE RANGE ────────────────────────────── */
+function getRange(){
+  const p=$('f-period').value;
+  const now=new Date();
+  const tod=new Date(now.getFullYear(),now.getMonth(),now.getDate());
+  if(p==='custom'){
+    const fv=$('f-from').value, tv=$('f-to').value;
+    if(!fv&&!tv) return null;
+    const s=fv?new Date(fv):null;
+    const e=tv?new Date(tv+'T23:59:59.999'):null;
+    return {s,e};
+  }
+  switch(p){
+    case 'today':   return {s:tod,e:new Date(tod.getTime()+86399999)};
+    case 'yest':    {const y=new Date(tod.getTime()-86400000);return {s:y,e:new Date(tod.getTime()-1)};}
+    case 'thismon': return {s:new Date(now.getFullYear(),now.getMonth(),1),e:new Date(now.getFullYear(),now.getMonth()+1,0,23,59,59,999)};
+    case 'prevmon': return {s:new Date(now.getFullYear(),now.getMonth()-1,1),e:new Date(now.getFullYear(),now.getMonth(),0,23,59,59,999)};
+    default: return null;
+  }
+}
+
+function onPeriodChange(){
+  const p=$('f-period').value;
+  $('custom-range').classList.toggle('show',p==='custom');
+  applyFilters();
+}
+
+/* ── FILTERS ───────────────────────────────── */
+function onActionChange(){
+  // Repopulate remarks for selected merged-action
+  const fA=$('f-action').value;
+  // filter raw using merged action name
+  const src=fA?S.raw.filter(r=>pivotAction(r.action)===fA):S.raw;
+  const remarks=[...new Set(src.map(r=>r.remark).filter(Boolean))].sort();
+  $('f-remark').innerHTML='<option value="">All Remarks</option>'+remarks.map(v=>`<option value="${esc(v)}">${esc(v)}</option>`).join('');
+  applyFilters();
+}
+
+function applyFilters(){
+  const range=getRange();
+  const fA=$('f-action').value;          // merged action name (e.g. "WITHDRAWAL")
+  const fR=$('f-remark').value;
+  const fC=$('f-csp').value.trim();      // combobox — exact or pasted value
+  const fP=$('f-partner').value.trim();
+
+  S.filtered=S.raw.filter(r=>{
+    if(range){
+      if(range.s&&r.date<range.s) return false;
+      if(range.e&&r.date>range.e) return false;
+    }
+    // Action filter: compare MERGED action name
+    if(fA&&pivotAction(r.action)!==fA) return false;
+    if(fR&&r.remark!==fR) return false;
+    // Combobox: exact match (case-insensitive for usability)
+    if(fC&&r.cspId.toLowerCase()!==fC.toLowerCase()) return false;
+    if(fP&&r.partnerId.toLowerCase()!==fP.toLowerCase()) return false;
+    return true;
+  });
+
+  updateTitle();
+  updateStats();
+  renderPivot();
+  if(S.txnOpen) renderTxn();
+}
+
+function resetFilters(){
+  $('f-period').value='all';
+  $('custom-range').classList.remove('show');
+  $('f-from').value=''; $('f-to').value='';
+  $('f-action').value='';
+  // Reset comboboxes
+  $('f-csp').value=''; $('f-csp-x').style.display='none';
+  $('f-partner').value=''; $('f-partner-x').style.display='none';
+  // Repopulate remarks to all
+  const remarks=[...new Set(S.raw.map(r=>r.remark).filter(Boolean))].sort();
+  $('f-remark').innerHTML='<option value="">All Remarks</option>'+remarks.map(v=>`<option value="${esc(v)}">${esc(v)}</option>`).join('');
+  applyFilters();
+}
+
+function updateTitle(){
+  const p=$('f-period').value;
+  let lbl=PERIOD_LABELS[p]||'Overall';
+  if(p==='custom'){
+    const fv=$('f-from').value,tv=$('f-to').value;
+    if(fv&&tv) lbl=`${fv} to ${tv}`;
+    else if(fv) lbl=`From ${fv}`;
+    else if(tv) lbl=`Until ${tv}`;
+  }
+  $('pivot-title').innerHTML=`CSP Wallet Journey — <span>${lbl}</span>`;
+  $('pivot-sub').textContent=S.filtered.length?`${S.filtered.length.toLocaleString('en-IN')} records`:'';
+}
+
+/* ── POPULATE DROPDOWNS ───────────────────── */
+function populateDropdowns(){
+  // Actions: apply PIVOT_MERGE so WITHDRAWAL_DEBIT+WITHDRAWAL → single "WITHDRAWAL" entry
+  const actions=[...new Set(S.raw.map(r=>pivotAction(r.action)))].sort();
+  const remarks=[...new Set(S.raw.map(r=>r.remark).filter(Boolean))].sort();
+  const csps   =[...new Set(S.raw.map(r=>r.cspId).filter(Boolean))].sort();
+  const partners=[...new Set(S.raw.map(r=>r.partnerId).filter(Boolean))].sort();
+
+  $('f-action').innerHTML='<option value="">All Actions</option>'+actions.map(v=>`<option value="${esc(v)}">${esc(v)}</option>`).join('');
+  $('f-remark').innerHTML='<option value="">All Remarks</option>'+remarks.map(v=>`<option value="${esc(v)}">${esc(v)}</option>`).join('');
+
+  // Datalists for comboboxes
+  $('dl-csp').innerHTML    =csps.map(v=>`<option value="${esc(v)}">`).join('');
+  $('dl-partner').innerHTML=partners.map(v=>`<option value="${esc(v)}">`).join('');
+}
+
+/* ── COMBOBOX HELPERS ─────────────────────── */
+function onComboInput(id){
+  const x=$(id+'-x');
+  x.style.display=$(id).value?'block':'none';
+  applyFilters();
+}
+function clearCombo(id){
+  $(id).value='';
+  $(id+'-x').style.display='none';
+  applyFilters();
+}
+
+/* ── STATS ─────────────────────────────────── */
+function updateStats(){
+  const d=S.filtered;
+  if(!d.length){['s-txns','s-amt','s-mon','s-act'].forEach(id=>$(id).textContent='0');return;}
+  const total=d.length,amt=d.reduce((s,r)=>s+r.amount,0);
+  const ms=new Set(d.map(r=>mKey(r.date))),as_=new Set(d.map(r=>r.action));
+  const months=[...ms].sort();
+  $('s-txns').textContent=total.toLocaleString('en-IN');
+  $('s-txns-s').textContent=`Across ${ms.size} month(s)`;
+  $('s-amt').textContent='₹'+fmt(amt);
+  $('s-amt-s').textContent=`Avg ₹${fmt(amt/total)}/txn`;
+  $('s-mon').textContent=ms.size;
+  $('s-mon-s').textContent=months.length>=2?`${mLbl(new Date(months[0]+'-02'))} → ${mLbl(new Date(months[months.length-1]+'-02'))}` :(months[0]?mLbl(new Date(months[0]+'-02')):'');
+  $('s-act').textContent=as_.size;
+  $('s-act-s').textContent=[...as_].join(' · ').slice(0,55);
+}
+
+/* ── EXPAND / COLLAPSE ─────────────────────── */
+function toggleAction(action){S.expanded[action]=!S.expanded[action];renderPivot();}
+function expandAll(){[...new Set(S.filtered.map(r=>r.action))].forEach(a=>{S.expanded[a]=true;});renderPivot();}
+function collapseAll(){[...new Set(S.filtered.map(r=>r.action))].forEach(a=>{S.expanded[a]=false;});renderPivot();}
+
+/* ── PIVOT RENDER ──────────────────────────── */
+function renderPivot(){
+  const thead=$('pv-thead'),tbody=$('pv-tbody'),data=S.filtered;
+  if(!data.length){
+    thead.innerHTML='';
+    tbody.innerHTML=`<tr><td style="padding:48px;text-align:center;color:var(--txt3)" colspan="4">No data for selected filters.</td></tr>`;
+    return;
+  }
+
+  const months=[...new Set(data.map(r=>mKey(r.date)))].sort();
+
+  // Aggregate — apply PIVOT_MERGE so WITHDRAWAL_DEBIT + WITHDRAWAL → "WITHDRAWAL"
+  const map={};
+  data.forEach(r=>{
+    const da=pivotAction(r.action);           // display action (merged)
+    const gk=`${da}\x01${r.remark}`;
+    if(!map[gk]) map[gk]={action:da,remark:r.remark,m:{},tc:0,ta:0};
+    const mk=mKey(r.date);
+    if(!map[gk].m[mk]) map[gk].m[mk]={c:0,a:0};
+    map[gk].m[mk].c++;map[gk].m[mk].a+=r.amount;
+    map[gk].tc++;map[gk].ta+=r.amount;
+  });
+
+  // Sort remark rows: highest amount → lowest (positive to negative)
+  let rows=Object.values(map).sort((a,b)=>{
+    if(a.action!==b.action) return 0; // action order handled below
+    return b.ta-a.ta;                 // actual value, not absolute
+  });
+
+  // Action subtotals
+  const byAct={};
+  rows.forEach(r=>{
+    if(!byAct[r.action]) byAct[r.action]={m:{},tc:0,ta:0};
+    const bA=byAct[r.action];
+    months.forEach(mk=>{if(!bA.m[mk]) bA.m[mk]={c:0,a:0};if(r.m[mk]){bA.m[mk].c+=r.m[mk].c;bA.m[mk].a+=r.m[mk].a;}});
+    bA.tc+=r.tc;bA.ta+=r.ta;
+  });
+
+  // Sort actions: highest total amount → lowest (positive to negative)
+  const actionKeys=[...new Set(rows.map(r=>r.action))].sort((a,b)=>byAct[b].ta-byAct[a].ta);
+
+  // Re-sort rows to match action order, then by amount within each action
+  rows.sort((a,b)=>{
+    const ai=actionKeys.indexOf(a.action),bi=actionKeys.indexOf(b.action);
+    if(ai!==bi) return ai-bi;
+    return b.ta-a.ta;   // within action: highest → lowest
+  });
+
+  // Grand totals
+  const gm={};let gTC=0,gTA=0;
+  months.forEach(mk=>gm[mk]={c:0,a:0});
+  rows.forEach(r=>{months.forEach(mk=>{if(r.m[mk]){gm[mk].c+=r.m[mk].c;gm[mk].a+=r.m[mk].a;}});gTC+=r.tc;gTA+=r.ta;});
+
+  // Set default expand state (false = collapsed)
+  actionKeys.forEach(a=>{if(!(a in S.expanded)) S.expanded[a]=false;});
+
+  // ── THEAD ──────────────────────────────────
+  let th=`<tr>
+    <th class="hcol1" rowspan="2"><div class="th-inner">Action</div></th>
+    <th class="hcol2" rowspan="2"><div class="th-inner">Remarks</div></th>`;
+  months.forEach(mk=>{const d=new Date(mk+'-02');th+=`<th class="th-month-wrap" colspan="2"><div class="th-month-inner">${mLbl(d)}</div></th>`;});
+  th+=`<th class="th-total-wrap" colspan="2"><div class="th-total-inner">Total (All Months)</div></th></tr><tr>`;
+  months.forEach(()=>{th+=`<th><div class="th-sub-inner">Count</div></th><th><div class="th-sub-inner amt">Amount (₹)</div></th>`;});
+  th+=`<th><div class="th-sub-total-inner">Count</div></th><th><div class="th-sub-total-inner amt">Amount (₹)</div></th></tr>`;
+  thead.innerHTML=th;
+  // Fix row-2 sticky top = actual row-1 height
+  requestAnimationFrame(()=>{
+    const row1=thead.querySelector('tr:first-child');
+    if(row1){
+      const h=row1.getBoundingClientRect().height;
+      thead.querySelectorAll('tr:last-child th').forEach(el=>el.style.top=h+'px');
+    }
+  });
+
+  // ── TBODY ──────────────────────────────────
+  let tb='';let firstGrp=true;
+
+  actionKeys.forEach(action=>{
+    const actionRows=rows.filter(r=>r.action===action);
+    const bA=byAct[action];
+    const isExp=S.expanded[action]===true;  // default false
+
+    const numSign=(v)=>v>=0?'gp':'gn';
+    const cell=(m)=>m&&m.c?`<td class="num tc">${m.c.toLocaleString('en-IN')}</td><td class="num ta ${numSign(m.a)}">₹${ff(m.a)}</td>`
+                          :`<td class="num tc cell-zero">—</td><td class="num ta cell-zero">—</td>`;
+
+    if(!isExp){
+      // COLLAPSED — one row, action name in both columns
+      const cls=abCls(action);
+      tb+=`<tr${firstGrp?'':' class="grp-start"'}>
+        <td class="dcol1"><span class="toggle" onclick="toggleAction('${esc(action)}')">+</span>${ab(action)}</td>
+        <td class="dcol2">${ab(action)}<span style="color:var(--txt3);font-size:10px;margin-left:6px;">(${actionRows.length} remark${actionRows.length>1?'s':''})</span></td>`;
+      months.forEach(mk=>tb+=cell(bA.m[mk]));
+      tb+=`<td class="num ttc">${bA.tc.toLocaleString('en-IN')}</td><td class="num tta ${numSign(bA.ta)}">₹${ff(bA.ta)}</td></tr>`;
+    } else {
+      // EXPANDED — individual remark rows
+      actionRows.forEach((row,ri)=>{
+        const isF=ri===0;
+        tb+=`<tr${isF&&!firstGrp?' class="grp-start"':''}>
+          <td class="dcol1">${isF?`<span class="toggle exp" onclick="toggleAction('${esc(action)}')">−</span>${ab(action)}`:''}</td>
+          <td class="dcol2" title="${esc(row.remark)}">${esc(row.remark)||'<em style="color:var(--txt3)">—</em>'}</td>`;
+        months.forEach(mk=>tb+=cell(row.m[mk]));
+        tb+=`<td class="num ttc">${row.tc.toLocaleString('en-IN')}</td><td class="num tta ${numSign(row.ta)}">₹${ff(row.ta)}</td></tr>`;
+      });
+      // Subtotal if >1 remark
+      if(actionRows.length>1){
+        tb+=`<tr class="sub-row">
+          <td class="dcol1"></td>
+          <td class="dcol2" style="font-weight:700;color:var(--blue);">${ab(action)} Subtotal</td>`;
+        months.forEach(mk=>{const m=bA.m[mk]||{c:0,a:0};tb+=m.c?`<td class="num tc">${m.c.toLocaleString('en-IN')}</td><td class="num ta">${'₹'+ff(m.a)}</td>`:`<td class="num tc cell-zero">—</td><td class="num ta cell-zero">—</td>`;});
+        tb+=`<td class="num ttc">${bA.tc.toLocaleString('en-IN')}</td><td class="num tta">₹${ff(bA.ta)}</td></tr>`;
+      }
+    }
+    firstGrp=false;
+  });
+
+  // Grand total
+  tb+=`<tr class="grand-total"><td class="dcol1" colspan="2">Grand Total</td>`;
+  months.forEach(mk=>{tb+=`<td class="num tc">${gm[mk].c.toLocaleString('en-IN')}</td><td class="num ta">₹${ff(gm[mk].a)}</td>`;});
+  tb+=`<td class="num ttc">${gTC.toLocaleString('en-IN')}</td><td class="num tta">₹${ff(gTA)}</td></tr>`;
+
+  tbody.innerHTML=tb;
+}
+
+/* ── TRANSACTION DETAIL ─────────────────────── */
+function toggleTxn(){
+  S.txnOpen=!S.txnOpen;
+  $('txn-card').style.display=S.txnOpen?'block':'none';
+  $('btn-txn').textContent=S.txnOpen?'📋 Hide Transactions':'📋 Show Transactions';
+  if(S.txnOpen){renderTxn();$('txn-card').scrollIntoView({behavior:'smooth',block:'start'});}
+}
+
+function renderTxn(){
+  const data=S.filtered.slice().sort((a,b)=>Math.abs(b.amount)-Math.abs(a.amount));
+  $('txn-count-lbl').textContent=`(${data.length.toLocaleString('en-IN')} records)`;
+  if(!data.length){$('txn-tbody').innerHTML=`<tr><td class="txn-empty" colspan="8">No transactions for current filters.</td></tr>`;return;}
+  let tb='';
+  data.forEach((r,i)=>{
+    const dtStr=r.addedTime||r.dateISO.replace('T',' ').replace(/\.\d{3}Z$/,'');
+    const aSign=r.amount>=0;
+    tb+=`<tr>
+      <td class="td-num">${i+1}</td>
+      <td style="color:var(--txt2)">${esc(dtStr)}</td>
+      <td style="color:var(--txt3)">${esc(r.txnId||'—')}</td>
+      <td>${esc(r.cspId||'—')}</td>
+      <td style="color:var(--txt3)">${esc(r.partnerId||'—')}</td>
+      <td class="td-act">${ab(r.action)}</td>
+      <td style="color:var(--txt2);max-width:240px;overflow:hidden;text-overflow:ellipsis;" title="${esc(r.remark)}">${esc(r.remark)||'—'}</td>
+      <td class="${aSign?'td-amt-p':'td-amt-n'}">₹${ff(r.amount)}</td>
+    </tr>`;
+  });
+  $('txn-tbody').innerHTML=tb;
+}
+
+/* ── EXPORT (multi-sheet XLSX) ──────────────── */
+function exportData(){
+  const data=S.filtered;
+  if(!data.length){toast('No data to export','error');return;}
+  sl('Preparing export…');
+  try{
+    const wb=XLSX.utils.book_new();
+    const p=$('f-period').value;
+    const lbl=PERIOD_LABELS[p]||'Overall';
+
+    // ── Sheet 1: Summary (Pivot) ──────────────
+    const months=[...new Set(data.map(r=>mKey(r.date)))].sort();
+    const map={};
+    // Apply same PIVOT_MERGE as the display (WITHDRAWAL_DEBIT + WITHDRAWAL → WITHDRAWAL)
+    data.forEach(r=>{const da=pivotAction(r.action);const gk=`${da}\x01${r.remark}`;if(!map[gk]) map[gk]={action:da,remark:r.remark,m:{},tc:0,ta:0};const mk=mKey(r.date);if(!map[gk].m[mk]) map[gk].m[mk]={c:0,a:0};map[gk].m[mk].c++;map[gk].m[mk].a+=r.amount;map[gk].tc++;map[gk].ta+=r.amount;});
+    // Build byAct for sorting
+    const byActE={};
+    Object.values(map).forEach(r=>{if(!byActE[r.action]) byActE[r.action]={ta:0};byActE[r.action].ta+=r.ta;});
+    const rows=Object.values(map).sort((a,b)=>{const ad=byActE[b.action].ta-byActE[a.action].ta;return ad!==0?ad:b.ta-a.ta;});
+    const byAct={};
+    rows.forEach(r=>{if(!byAct[r.action]) byAct[r.action]={m:{},tc:0,ta:0};const bA=byAct[r.action];months.forEach(mk=>{if(!bA.m[mk]) bA.m[mk]={c:0,a:0};if(r.m[mk]){bA.m[mk].c+=r.m[mk].c;bA.m[mk].a+=r.m[mk].a;}});bA.tc+=r.tc;bA.ta+=r.ta;});
+
+    const h1=['Action','Remarks'];months.forEach(mk=>{const d=new Date(mk+'-02');h1.push(mLbl(d),'');});h1.push('Total Count','Total Amount (INR)');
+    const h2=['',''];months.forEach(()=>h2.push('Count','Amount (₹)'));h2.push('','');
+    const summRows=[h1,h2];
+    rows.forEach(r=>{const row=[r.action,r.remark];months.forEach(mk=>{const m=r.m[mk]||{c:0,a:0};row.push(m.c,parseFloat(m.a.toFixed(2)));});row.push(r.tc,parseFloat(r.ta.toFixed(2)));summRows.push(row);});
+    const gm={};let gTC=0,gTA=0;months.forEach(mk=>gm[mk]={c:0,a:0});
+    rows.forEach(r=>{months.forEach(mk=>{if(r.m[mk]){gm[mk].c+=r.m[mk].c;gm[mk].a+=r.m[mk].a;}});gTC+=r.tc;gTA+=r.ta;});
+    const gt=['Grand Total',''];months.forEach(mk=>gt.push(gm[mk].c,parseFloat(gm[mk].a.toFixed(2))));gt.push(gTC,parseFloat(gTA.toFixed(2)));summRows.push(gt);
+
+    const ws1=XLSX.utils.aoa_to_sheet(summRows);
+    // Widen columns
+    ws1['!cols']=[{wch:22},{wch:40},...months.flatMap(()=>[{wch:10},{wch:16}]),{wch:12},{wch:18}];
+    XLSX.utils.book_append_sheet(wb,ws1,'Summary');
+
+    // ── Sheet 2: Transactions ─────────────────
+    const txnHeader=['#','Date / Time','ID','CSP ID','Partner ID','Action','Remark','Amount (INR)'];
+    const txnRows=[txnHeader];
+    data.slice().sort((a,b)=>Math.abs(b.amount)-Math.abs(a.amount)).forEach((r,i)=>{
+      const dtStr=r.addedTime||r.dateISO.replace('T',' ').replace(/\.\d{3}Z$/,'');
+      txnRows.push([i+1,dtStr,r.txnId||'',r.cspId||'',r.partnerId||'',r.action,r.remark,parseFloat(r.amount.toFixed(2))]);
+    });
+    const ws2=XLSX.utils.aoa_to_sheet(txnRows);
+    ws2['!cols']=[{wch:5},{wch:22},{wch:16},{wch:14},{wch:14},{wch:22},{wch:45},{wch:18}];
+    XLSX.utils.book_append_sheet(wb,ws2,'Transactions');
+
+    XLSX.writeFile(wb,`csp_wallet_${lbl.replace(/\s/g,'_')}_${new Date().toISOString().slice(0,10)}.xlsx`);
+    toast('Downloaded ✓','success');
+  }catch(err){toast('Export error: '+err.message,'error');console.error(err);}
+  finally{hl();}
+}
+
+/* ── FILE READING ──────────────────────────── */
+function readFile(file){
+  return new Promise((res,rej)=>{
+    const ext=file.name.split('.').pop().toLowerCase();
+    if(ext==='xlsx'||ext==='xls'){
+      const rd=new FileReader();
+      rd.onload=e=>{try{const wb=XLSX.read(new Uint8Array(e.target.result),{type:'array',cellDates:true});res(XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{defval:'',raw:false}));}catch(er){rej(er);}};
+      rd.onerror=rej;rd.readAsArrayBuffer(file);
+    } else {
+      Papa.parse(file,{header:true,skipEmptyLines:true,dynamicTyping:false,complete:r=>res(r.data),error:rej});
+    }
+  });
+}
+
+/* ── NORMALISE ─────────────────────────────── */
+function normalise(rawRows){
+  if(!rawRows.length) throw new Error('File is empty.');
+  const keys=Object.keys(rawRows[0]);
+  const exact=n=>keys.find(k=>k.toUpperCase()===n.toUpperCase())||null;
+  const fuzzy=(...cc)=>{for(const c of cc){const k=keys.find(k=>k.toUpperCase().includes(c.toUpperCase()));if(k) return k;}return null;};
+
+  const kId    =exact('ID')          ||fuzzy('TXN_ID','TRANSACTION_ID','TXNID');
+  const kCspId =exact('CSP_ID')      ||fuzzy('CSP_ID','CSPID');
+  const kPart  =exact('PARTNER_ID')  ||fuzzy('PARTNER_ID','PARTNERID');
+  const kDate  =exact('ADDED_TIME')  ||fuzzy('ADDED_TIME','CREATED_AT','DATE','TIME','TIMESTAMP');
+  const kAction=exact('ACTION')      ||fuzzy('ACTION');
+  const kRemark=exact('REMARK')      ||fuzzy('REMARK','DESCRIPTION','NOTE');
+  const kAmount=exact('AMOUNT')      ||fuzzy('AMOUNT','AMT','VALUE');
+  const kWallet=exact('WALLET_SOURCE')||fuzzy('WALLET_SOURCE','WALLET');
+
+  if(!kDate)   throw new Error(`ADDED_TIME column not found. Columns: ${keys.join(', ')}`);
+  if(!kAction) throw new Error(`ACTION column not found. Columns: ${keys.join(', ')}`);
+  if(!kAmount) throw new Error(`AMOUNT column not found. Columns: ${keys.join(', ')}`);
+
+  const rows=[];
+  rawRows.forEach(r=>{
+    if(kWallet){const wv=String(r[kWallet]??'').toUpperCase().trim();if(wv&&wv!==WALLET) return;}
+    const d=r[kDate]?new Date(r[kDate]):null;
+    if(!d||isNaN(d)) return;
+    const dateISO=d.toISOString();
+    const idVal  =kId    ?String(r[kId]??'').trim():'';
+    const cspId  =kCspId ?String(r[kCspId]??'').trim():'';
+    const partId =kPart  ?String(r[kPart]??'').trim():'';
+    const amtStr =String(r[kAmount]??'').replace(/,/g,'').trim();
+    const action =String(r[kAction]??'UNKNOWN').trim().toUpperCase();
+    const remark =String(r[kRemark]??'').trim();
+    const addedTime=String(r[kDate]??'').trim();
+    const _key=[idVal,dateISO,cspId].join('||');
+    rows.push({_key,action,remark,amount:parseFloat(amtStr)||0,dateISO,cspId,partnerId:partId,txnId:idVal,addedTime});
+  });
+  if(!rows.length) throw new Error(`No rows matched WALLET_SOURCE = ${WALLET}. Check the file.`);
+  return rows;
+}
+
+/* ── LOAD FROM DB ──────────────────────────── */
+async function loadFromDB(){
+  sl('Loading saved data…');
+  try{
+    const rows=await dbAll(S.db);
+    if(!rows.length){showLand();return;}
+    S.raw=rows.map(r=>({...r,date:new Date(r.dateISO)}));
+    showDash();
+    populateDropdowns();
+    applyFilters();
+    $('btn-txn').style.display='';
+    $('last-upd').textContent='Loaded '+new Date().toLocaleTimeString('en-IN');
+  }finally{hl();}
+}
+
+/* ── PROCESS UPLOAD ─────────────────────────── */
+async function processFile(file,ctx){
+  const ext=file.name.split('.').pop().toLowerCase();
+  if(!['csv','tsv','txt','xlsx','xls'].includes(ext)){toast('Unsupported file type: .'+ext,'error');return;}
+  sl(`Reading "${file.name}"…`);
+  try{
+    const raw=await readFile(file);
+    sl('Saving…');
+    const newRows=normalise(raw);
+    const before=await dbCount(S.db);
+    await dbPut(S.db,newRows);
+    const after=await dbCount(S.db);
+    const added=after-before,dupes=newRows.length-added;
+
+    const dbRows=await dbAll(S.db);
+    S.raw=dbRows.map(r=>({...r,date:new Date(r.dateISO)}));
+    showDash();
+    populateDropdowns();
+    applyFilters();
+    $('btn-txn').style.display='';
+    $('last-upd').textContent='Loaded '+new Date().toLocaleTimeString('en-IN');
+
+    const msg=added>0&&dupes>0?`✅ ${added.toLocaleString('en-IN')} new · ${dupes.toLocaleString('en-IN')} duplicates skipped · Total: ${after.toLocaleString('en-IN')}`
+             :added>0?`✅ ${added.toLocaleString('en-IN')} records added · Total: ${after.toLocaleString('en-IN')}`
+             :`ℹ️ All ${newRows.length} rows already stored · Total: ${after.toLocaleString('en-IN')}`;
+    $('banner-msg').textContent=msg;$('banner').className=`banner show ${added>0?'added':'clean'}`;
+
+    if(ctx==='land'){const us=$('ustatus');us.style.display='block';us.className='ustatus ok';us.textContent=msg;}
+    toast(added>0?`${added} new records added ✓`:'All records already stored',added>0?'success':'info');
+  }catch(err){
+    if(ctx==='land'){const us=$('ustatus');us.style.display='block';us.className='ustatus err';us.textContent='❌ '+err.message;}
+    toast(err.message,'error');console.error(err);
+  }finally{hl();}
+}
+
+/* ── HANDLERS ──────────────────────────────── */
+function handleDrop(e){e.preventDefault();$('dzone').classList.remove('over');const f=e.dataTransfer.files[0];if(f) processFile(f,'land');}
+function handleLandUpload(e){const f=e.target.files[0];if(f) processFile(f,'land');e.target.value='';}
+function handleHdrUpload(e){const f=e.target.files[0];if(f) processFile(f,'hdr');e.target.value='';}
+
+
+/* ── METABASE AUTO-SYNC ─────────────────────── */
+const MB = { token:null, tokenTime:0, timer:null, countdownTimer:null, syncing:false, lastSync:null, nextSync:null, lastError:null };
+const MB_KEYS = { qurl:'ww_mb_qurl', email:'ww_mb_email', pass:'ww_mb_pass', interval:'ww_mb_interval', enabled:'ww_mb_enabled', lastSync:'ww_mb_last' };
+const DEFAULT_QURL = 'https://metabase.wiom.in/question/11227-new-csp-app-partner-wallet-transaction-report-prod-db-public-t-account-balance-sheet1-new?From=&To=&PARTNER_ID=&CSP_ID=&WALLET_SOURCE=NEW_WALLET';
+
+/* Parse base URL and question ID from a Metabase question URL */
+function parseQuestionURL(qurl){
+  try {
+    const u = new URL(qurl);
+    const base = u.origin;                         // https://metabase.wiom.in
+    const seg  = u.pathname.split('/').filter(Boolean); // ['question','11227-...']
+    const qSeg = seg.find(s=>/^\d+/.test(s)) || '11227';
+    const qid  = qSeg.match(/^(\d+)/)[1];          // '11227'
+    return { base, qid };
+  } catch(e){
+    return { base:'', qid:'11227' };
+  }
+}
+
+function mbCfg(){
+  const qurl = localStorage.getItem(MB_KEYS.qurl) || DEFAULT_QURL;
+  const { base, qid } = parseQuestionURL(qurl);
+  return {
+    qurl,
+    url:      base,
+    qid,
+    email:    localStorage.getItem(MB_KEYS.email)    || '',
+    pass:     localStorage.getItem(MB_KEYS.pass)     || '',
+    interval: parseInt(localStorage.getItem(MB_KEYS.interval) || '60'),
+    enabled:  localStorage.getItem(MB_KEYS.enabled)  === '1'
+  };
+}
+
+/* Settings modal open/close */
+function openSM(){
+  const c=mbCfg();
+  $('sm-qurl').value    = c.qurl || DEFAULT_QURL;
+  $('sm-email').value   = c.email;
+  $('sm-pass').value    = c.pass;
+  $('sm-interval').value= String(c.interval);
+  if(MB.lastError){
+    smStatus('Last error: '+MB.lastError,'err');
+  } else {
+    $('sm-status').style.display='none';
+  }
+  $('sm').classList.add('show');
+}
+function closeSM(){ $('sm').classList.remove('show'); }
+/* backdrop click — wired in init() after DOM ready */
+
+function smStatus(msg, type){
+  const el=$('sm-status');
+  el.textContent=msg; el.className=`sm-status ${type}`; el.style.display='block';
+}
+
+async function testConnection(){
+  const qurl=$('sm-qurl').value.trim();
+  const email=$('sm-email').value.trim();
+  const pass=$('sm-pass').value;
+  const {base:url, qid} = parseQuestionURL(qurl);
+  if(!url||!email||!pass){ smStatus('Please fill in the question URL, email, and password.','err'); return; }
+  smStatus(`Testing connection to ${url} (Question #${qid})…`,'info');
+  try {
+    const tok = await mbAuth(url, email, pass);
+    smStatus(`✅ Connected! Metabase session OK — Question #${qid} ready to sync.`,'ok');
+    MB.token = tok; MB.tokenTime = Date.now();
+  } catch(err){
+    smStatus(`❌ ${err.message}`,'err');
+  }
+}
+
+function saveSettings(){
+  const qurl=$('sm-qurl').value.trim()||DEFAULT_QURL;
+  const email=$('sm-email').value.trim();
+  const pass=$('sm-pass').value;
+  const interval=parseInt($('sm-interval').value)||60;
+  const enabled = true;
+  const {base:url} = parseQuestionURL(qurl);
+
+  if(!url||!email||!pass){
+    smStatus('Please fill in the question URL, email, and password.','err'); return;
+  }
+
+  localStorage.setItem(MB_KEYS.qurl, qurl);
+  localStorage.setItem(MB_KEYS.email, email);
+  localStorage.setItem(MB_KEYS.pass, pass);
+  localStorage.setItem(MB_KEYS.interval, interval);
+  localStorage.setItem(MB_KEYS.enabled, enabled?'1':'0');
+
+  MB.token=null; // force re-auth
+  // Always enable when credentials are saved
+  localStorage.setItem(MB_KEYS.enabled,'1');
+  closeSM();
+  startAutoSync();
+  syncFromMetabase(); // fetch immediately
+  toast('Connected! Fetching data from Metabase…','success');
+}
+
+/* Metabase auth → session token
+   Tries both field names (username / email) and both credential modes */
+async function mbAuth(url, email, pass){
+  const endpoint = `${url}/api/session`;
+  // Attempt 1: standard JSON auth with credentials included (sends browser cookies)
+  // Attempt 2: same but 'omit' credentials (no cookies)
+  // Metabase accepts both 'username' and 'email' depending on version
+  const bodies = [
+    {username: email, password: pass},
+    {email:    email, password: pass}
+  ];
+  let lastErr = '';
+  for (const creds of ['include','omit']){
+    for (const body of bodies){
+      try{
+        const r = await fetch(endpoint, {
+          method:'POST',
+          headers:{'Content-Type':'application/json'},
+          credentials: creds,
+          body: JSON.stringify(body)
+        });
+        if(r.ok){
+          const d = await r.json();
+          if(d.id) return d.id;
+        }
+        if(r.status===401||r.status===400||r.status===422){
+          const txt = await r.text().catch(()=>'');
+          lastErr = `Invalid credentials (${r.status}): ${txt.slice(0,120)}`;
+          continue; // try other body format
+        }
+        const txt = await r.text().catch(()=>'');
+        lastErr = `Auth failed (${r.status}): ${txt.slice(0,120)}`;
+      } catch(e){
+        // Network / CORS failure
+        const isCors = e instanceof TypeError && /fetch|network|CORS/i.test(e.message);
+        lastErr = isCors
+          ? 'CORS blocked — open this file from a web server (e.g. localhost) or ask your Metabase admin to allow this origin.'
+          : `Network error: ${e.message}`;
+      }
+    }
+  }
+  throw new Error(lastErr || 'Authentication failed. Check credentials.');
+}
+
+/* Fetch question as CSV text */
+async function mbFetchCSV(url, token, qid){
+  const r = await fetch(`${url}/api/card/${qid}/query/csv`, {
+    method:'POST',
+    headers:{'X-Metabase-Session':token,'Content-Type':'application/json'},
+    credentials:'include',
+    body: JSON.stringify({})
+  });
+  if(!r.ok){
+    const body = await r.text().catch(()=>'');
+    throw new Error(`Query failed (${r.status}): ${body.slice(0,120)}`);
+  }
+  return r.text();
+}
+
+/* Detect runtime environment */
+function isLocalProxy(){
+  return location.protocol==='http:' && location.hostname==='localhost' && location.port==='8765';
+}
+function isNetlify(){
+  // Running on Netlify — use serverless function endpoint
+  return location.protocol==='https:' && (
+    location.hostname.endsWith('.netlify.app') || location.hostname.endsWith('.netlify.com')
+  );
+}
+function isWebHosted(){
+  // Any real HTTP/HTTPS host (GitHub Pages, Netlify, any server) — can fetch local data file
+  return location.protocol==='https:' || (location.protocol==='http:' && location.hostname!=='');
+}
+
+/* Full sync cycle */
+async function syncFromMetabase(){
+  const cfg = mbCfg();
+  if(MB.syncing) return;
+
+  MB.syncing = true;
+  updateSyncUI('syncing');
+
+  try {
+    let csv;
+
+    if(isLocalProxy()){
+      // Running via sync_proxy.py — fetch from local proxy endpoint (no CORS)
+      const r = await fetch('/mb-sync');
+      if(!r.ok){ const msg=await r.text().catch(()=>''); throw new Error(`Proxy error: ${msg.slice(0,200)}`); }
+      csv = await r.text();
+    } else if(isNetlify()){
+      // Running on Netlify — use serverless function (server-side, no CORS)
+      const r = await fetch('/.netlify/functions/mb-sync');
+      if(!r.ok){ const msg=await r.text().catch(()=>''); throw new Error(`Netlify function error: ${msg.slice(0,200)}`); }
+      csv = await r.text();
+    } else {
+      // Direct Metabase API — requires CORS to be allowed by server
+      if(!cfg.url || !cfg.email || !cfg.pass){
+        throw new Error('No credentials. Click ⚙️ to configure, or run sync_proxy.py for automatic sync.');
+      }
+      if(!MB.token || (Date.now()-MB.tokenTime) > 12*3600*1000){
+        MB.token = await mbAuth(cfg.url, cfg.email, cfg.pass);
+        MB.tokenTime = Date.now();
+      }
+      csv = await mbFetchCSV(cfg.url, MB.token, cfg.qid);
+    }
+
+    const parsed = Papa.parse(csv_final, {header:true, skipEmptyLines:true, dynamicTyping:false});
+    const newRows = normalise(parsed.data);
+
+    const before = await dbCount(S.db);
+    await dbPut(S.db, newRows);
+    const after  = await dbCount(S.db);
+    const added  = after - before;
+
+    const dbRows = await dbAll(S.db);
+    S.raw = dbRows.map(r=>({...r, date:new Date(r.dateISO)}));
+    if(S.raw.length){ showDash(); populateDropdowns(); applyFilters(); $('btn-txn').style.display=''; }
+
+    MB.lastSync = new Date();
+    MB.nextSync = new Date(MB.lastSync.getTime() + cfg.interval*60*1000);
+    localStorage.setItem(MB_KEYS.lastSync, MB.lastSync.toISOString());
+
+    updateSyncUI('ok');
+    $('last-upd').textContent = 'Synced '+MB.lastSync.toLocaleTimeString('en-IN');
+    if(added>0) toast(`Auto-sync: ${added} new records added ✓`,'success');
+    else        toast('Auto-sync: data is up to date','info');
+
+  } catch(err){
+    MB.token = null; // force re-auth next time
+    MB.lastError = err.message;
+    MB.nextSync = new Date(Date.now() + mbCfg().interval*60*1000);
+    updateSyncUI('err', err.message);
+    console.error('Metabase sync error:', err);
+    toast('⚠️ Sync failed — click the red badge for details','error');
+  } finally {
+    MB.syncing = false;
+  }
+}
+
+function manualSync(){ MB.token=null; syncFromMetabase(); }
+
+/* Start/restart interval timer */
+function startAutoSync(){
+  if(MB.timer)      clearInterval(MB.timer);
+  if(MB.countdownTimer) clearInterval(MB.countdownTimer);
+
+  const cfg = mbCfg();
+  if(!cfg.enabled){ updateSyncUI('off'); return; }
+
+  $('btn-sync').style.display='';
+  MB.nextSync = new Date(Date.now() + cfg.interval*60*1000);
+  MB.timer = setInterval(syncFromMetabase, cfg.interval*60*1000);
+
+  // Countdown ticker every 30s
+  MB.countdownTimer = setInterval(()=>{
+    if(!MB.syncing) updateSyncUI(MB.lastSync?'ok':'off');
+  }, 30000);
+
+  updateSyncUI(MB.lastSync?'ok':'off');
+}
+
+/* Update the header sync badge */
+function updateSyncUI(state, errMsg){
+  const badge=$('sync-badge'), dot=$('sync-dot'), lbl=$('sync-lbl');
+  badge.style.display='flex';
+
+  const minsLeft = MB.nextSync ? Math.max(0,Math.round((MB.nextSync-Date.now())/60000)) : null;
+  const nextStr  = minsLeft!==null ? (minsLeft<=0?'now':`in ${minsLeft}m`) : '';
+
+  if(state==='syncing'){
+    badge.className='sync-badge syncing'; dot.className='sdot spin-dot';
+    lbl.textContent='Syncing…';
+  } else if(state==='ok'){
+    badge.className='sync-badge ok'; dot.className='sdot ok';
+    const t=MB.lastSync?MB.lastSync.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'}):'';
+    lbl.textContent=`Synced ${t}${nextStr?' · Next '+nextStr:''}`;
+  } else if(state==='err'){
+    badge.className='sync-badge err'; dot.className='sdot err';
+    lbl.textContent='Sync failed · Click to fix';
+    if(errMsg) badge.title=errMsg;
+  } else { // off
+    badge.className='sync-badge off'; dot.className='sdot off';
+    lbl.textContent='Auto-sync off';
+  }
+}
+
+/* ── INIT ──────────────────────────────────── */
+async function init(){
+  sl('Initialising…');
+  try{
+    S.db=await openDB();
+    if(sessionStorage.getItem('migrated')==='1'){sessionStorage.removeItem('migrated');$('mig').classList.add('show');}
+    await loadFromDB();
+
+    // Auto-load pre-fetched data file (GitHub Pages / any web server)
+    if(isWebHosted()){
+      await autoLoadDataFile();
+    }
+
+    // Auto-sync on Netlify or local proxy (Metabase API proxy)
+    if(isNetlify() || isLocalProxy()){
+      const lastISO=localStorage.getItem(MB_KEYS.lastSync);
+      if(lastISO) MB.lastSync=new Date(lastISO);
+      startAutoSync();
+      const age=MB.lastSync?Date.now()-MB.lastSync.getTime():Infinity;
+      const interval=parseInt(localStorage.getItem(MB_KEYS.interval)||'60');
+      if(age>interval*60*1000) syncFromMetabase();
+    }
+  }catch(err){hl();showLand();console.error(err);toast('Could not open database. Use Chrome or Edge.','error');}
+}
+
+/* Auto-load data/latest.csv if it exists on the server (GitHub Pages / web hosting) */
+async function autoLoadDataFile(){
+  try{
+    const r = await fetch('./data/latest.csv', {cache:'no-cache'});
+    if(!r.ok) return; // file not found — fine, skip silently
+    const csvText = await r.text();
+    if(!csvText || csvText.length < 10) return;
+
+    // Check last-sync timestamp
+    let syncTime = '';
+    try{
+      const ts = await fetch('./data/last-sync.txt',{cache:'no-cache'});
+      if(ts.ok) syncTime = (await ts.text()).trim();
+    }catch(e){}
+
+    sl('Loading latest data from server…');
+    const rows = normalise(Papa.parse(csvText,{header:true,skipEmptyLines:true,dynamicTyping:false}).data);
+    const before = await dbCount(S.db);
+    await dbPut(S.db, rows);
+    const after = await dbCount(S.db);
+    const added = after - before;
+
+    const dbRows = await dbAll(S.db);
+    S.raw = dbRows.map(r=>({...r,date:new Date(r.dateISO)}));
+    showDash();
+    populateDropdowns();
+    applyFilters();
+    $('btn-txn').style.display='';
+
+    const syncLabel = syncTime ? ' · Data as of ' + new Date(syncTime).toLocaleString('en-IN') : '';
+    $('last-upd').textContent = 'Auto-loaded' + syncLabel;
+
+    if(added>0){
+      toast(`Auto-loaded ${added} new records ✓`,'success');
+    } else {
+      toast('Data up to date','info');
+    }
+  }catch(e){
+    console.warn('[autoLoadDataFile]', e.message);
+  }finally{
+    hl();
+  }
+}
+
+document.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>
