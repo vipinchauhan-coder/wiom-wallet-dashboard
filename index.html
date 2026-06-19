@@ -356,6 +356,7 @@ input[list]::-webkit-calendar-picker-indicator{opacity:0;pointer-events:none;}
         ⬆ Upload File
         <input type="file" id="hdr-file" accept=".csv,.tsv,.txt,.xlsx,.xls" onchange="handleHdrUpload(event)">
       </label>
+      <button class="btn btn-danger" id="btn-clr" style="display:none" onclick="confirmClearAll()">🗑 Clear All Data</button>
     </div>
   </div>
 </header>
@@ -575,12 +576,14 @@ function showDash(){
   $('dashboard-body').style.display='block';
   $('filter-bar').style.display='flex';
   $('btn-exp').style.display='';
+  $('btn-clr').style.display='';
 }
 function showLand(){
   $('upload-landing').style.display='flex';
   $('dashboard-body').style.display='none';
   $('filter-bar').style.display='none';
   $('btn-exp').style.display='none';
+  $('btn-clr').style.display='none';
 }
 
 /* ── DATE RANGE ────────────────────────────── */
@@ -1033,6 +1036,20 @@ async function processFile(file,ctx){
     if(ctx==='land'){const us=$('ustatus');us.style.display='block';us.className='ustatus err';us.textContent='❌ '+err.message;}
     toast(err.message,'error');console.error(err);
   }finally{hl();}
+}
+
+/* ── CLEAR ALL DATA ─────────────────────────── */
+async function confirmClearAll(){
+  if(!confirm('⚠️ This will permanently delete ALL stored records.\nThis cannot be undone.\n\nProceed?')) return;
+  sl('Clearing database…');
+  try{
+    await dbClear(S.db);
+    S.raw=[];
+    showLand();
+    $('last-upd').textContent='';
+    toast('All data cleared. Upload a fresh file.','info');
+  }catch(e){toast('Clear failed: '+e.message,'error');}
+  finally{hl();}
 }
 
 /* ── HANDLERS ──────────────────────────────── */
