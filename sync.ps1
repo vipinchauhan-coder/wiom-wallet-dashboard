@@ -1,6 +1,5 @@
 # sync.ps1 - Wiom Wallet Dashboard Data Sync
 # No Node.js required. Run from inside Wiom network.
-# Usage: powershell -ExecutionPolicy Bypass -File sync.ps1
 
 $GITHUB_PAT  = if ($env:GITHUB_PAT) { $env:GITHUB_PAT } else { Read-Host "Enter GitHub PAT" }
 $GITHUB_REPO = 'vipinchauhan-coder/wiom-wallet-dashboard'
@@ -23,24 +22,37 @@ Write-Host ""
 Write-Host " Wiom Wallet Dashboard - Data Sync"
 Write-Host ""
 
-Write-Host " [..] Authenticating with Metabase..."
+Write-Host " [..] Authenticating with Metabase at $MB_URL ..."
+$token = $null
+
+# Try method 1: username field
 try {
     $authBody = @{ username = $MB_EMAIL; password = $MB_PASSWORD } | ConvertTo-Json
     $authResp = Invoke-RestMethod -Uri "$MB_URL/api/session" -Method POST -ContentType 'application/json' -Body $authBody -ErrorAction Stop
     $token = $authResp.id
+    Write-Host " [OK] Auth OK (method 1)"
 } catch {
+    Write-Host " [..] Method 1 failed: $($_.Exception.Message)"
+}
+
+# Try method 2: email field
+if (-not $token) {
     try {
         $authBody = @{ email = $MB_EMAIL; password = $MB_PASSWORD } | ConvertTo-Json
         $authResp = Invoke-RestMethod -Uri "$MB_URL/api/session" -Method POST -ContentType 'application/json' -Body $authBody -ErrorAction Stop
         $token = $authResp.id
+        Write-Host " [OK] Auth OK (method 2)"
     } catch {
-        Write-Host " [ERROR] Metabase auth failed. Make sure this PC is on Wiom network/VPN."
-        Read-Host "Press Enter to exit"; exit 1
+        Write-Host " [..] Method 2 failed: $($_.Exception.Message)"
     }
 }
-Write-Host " [OK] Authenticated."
 
-Write-Host " [..] Downloading data..."
+if (-not $token) {
+    Write-Host " [ERROR] Both auth methods failed."
+    Read-Host "Press Enter to exit"; exit 1
+}
+
+Write-Host " [..] Downloading data (question $MB_QID)..."
 try {
     $headers = @{ 'X-Metabase-Session' = $token; 'Content-Type' = 'application/json' }
     $csvBytes = Invoke-WebRequest -Uri "$MB_URL/api/card/$MB_QID/query/csv" -Method POST -Headers $headers -Body '{"parameters":[]}' -ErrorAction Stop
@@ -48,7 +60,7 @@ try {
     $rowCount = ($csvText -split "`n").Count - 1
     Write-Host " [OK] Got $rowCount rows."
 } catch {
-    Write-Host " [ERROR] Download failed: $_"
+    Write-Host " [ERROR] Download failed: $($_.Exception.Message)"
     Read-Host "Press Enter to exit"; exit 1
 }
 
@@ -70,7 +82,7 @@ try {
     Push-ToGitHub 'data/last-sync.txt' $now $now
     Write-Host " [OK] Done!"
 } catch {
-    Write-Host " [ERROR] GitHub push failed: $_"
+    Write-Host " [ERROR] GitHub push failed: $($_.Exception.Message)"
     Read-Host "Press Enter to exit"; exit 1
 }
 
