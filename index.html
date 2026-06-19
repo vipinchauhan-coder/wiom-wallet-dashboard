@@ -1504,10 +1504,9 @@ async function autoLoadDataFile(){
 
     sl('Loading latest data from server…');
     const rows = normalise(Papa.parse(csvText,{header:true,skipEmptyLines:true,dynamicTyping:false}).data);
-    const before = await dbCount(S.db);
+    // REPLACE mode: clear old data first so stale/uploaded rows don't accumulate
+    await dbClear(S.db);
     await dbPut(S.db, rows);
-    const after = await dbCount(S.db);
-    const added = after - before;
 
     const dbRows = await dbAll(S.db);
     S.raw = dbRows.map(r=>({...r,date:new Date(r.dateISO)}));
@@ -1518,12 +1517,7 @@ async function autoLoadDataFile(){
 
     const syncLabel = syncTime ? ' · Data as of ' + new Date(syncTime).toLocaleString('en-IN') : '';
     $('last-upd').textContent = 'Auto-loaded' + syncLabel;
-
-    if(added>0){
-      toast(`Auto-loaded ${added} new records ✓`,'success');
-    } else {
-      toast('Data up to date','info');
-    }
+    toast(`Loaded ${rows.length.toLocaleString('en-IN')} records ✓`,'success');
   }catch(e){
     console.warn('[autoLoadDataFile]', e.message);
   }finally{
@@ -1535,3 +1529,4 @@ document.addEventListener('DOMContentLoaded', init);
 </script>
 </body>
 </html>
+                                                               
