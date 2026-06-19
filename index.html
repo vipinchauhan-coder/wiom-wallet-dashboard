@@ -57,6 +57,70 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .hdr-right{display:flex;align-items:center;gap:7px;flex-wrap:wrap;}
 .last-upd{font-size:10px;color:var(--txt3);white-space:nowrap;}
 
+/* SYNC STATUS BADGE */
+.sync-badge{display:none;align-items:center;gap:5px;font-size:11px;font-weight:600;
+  padding:4px 10px;border-radius:20px;white-space:nowrap;border:1px solid;}
+.sync-badge.ok{background:var(--green-g);color:var(--green);border-color:rgba(34,197,94,.3);}
+.sync-badge.syncing{background:var(--blue-g);color:var(--blue);border-color:rgba(59,130,246,.3);}
+.sync-badge.err{background:var(--red-g);color:var(--red);border-color:rgba(239,68,68,.3);cursor:pointer;}
+.sync-badge.off{background:var(--bg3);color:var(--txt3);border-color:var(--bdr);}
+.sdot{width:7px;height:7px;border-radius:50%;flex-shrink:0;}
+.sdot.ok{background:var(--green);box-shadow:0 0 5px var(--green);}
+.sdot.spin-dot{background:var(--blue);animation:pulse 1s ease-in-out infinite;}
+.sdot.err{background:var(--red);}
+.sdot.off{background:var(--txt3);}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:.3;}}
+
+/* SETTINGS MODAL */
+#sm{display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:9500;
+  align-items:center;justify-content:center;backdrop-filter:blur(4px);}
+#sm.show{display:flex;}
+.sm-card{background:var(--bg2);border:1px solid var(--bdr);border-radius:var(--rl);
+  width:100%;max-width:480px;max-height:90vh;overflow-y:auto;
+  box-shadow:0 24px 64px rgba(0,0,0,.8);}
+.sm-hdr{display:flex;align-items:center;justify-content:space-between;
+  padding:18px 22px;border-bottom:1px solid var(--bdr);
+  background:linear-gradient(90deg,var(--bg3),var(--bg2));}
+.sm-hdr h3{font-size:15px;font-weight:700;color:var(--txt);}
+.sm-close{cursor:pointer;color:var(--txt3);font-size:20px;line-height:1;
+  background:none;border:none;padding:2px 6px;}
+.sm-close:hover{color:var(--txt);}
+.sm-body{padding:22px;}
+.sm-row{margin-bottom:16px;}
+.sm-label{display:block;font-size:11px;font-weight:700;color:var(--txt2);
+  text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;}
+.sm-inp{width:100%;padding:8px 12px;border:1px solid var(--bdr);border-radius:var(--r);
+  font-size:13px;color:var(--txt);background:var(--bg3);outline:none;
+  transition:border-color .2s;}
+.sm-inp:focus{border-color:var(--blue);box-shadow:0 0 0 2px var(--blue-g);}
+.sm-inp::placeholder{color:var(--txt3);}
+.sm-inp option{background:var(--bg2);}
+.sm-toggle-row{display:flex;align-items:center;justify-content:space-between;
+  background:var(--bg3);border:1px solid var(--bdr);border-radius:var(--r);
+  padding:10px 14px;margin-bottom:16px;}
+.sm-toggle-lbl{font-size:13px;font-weight:600;color:var(--txt);}
+.sm-toggle-sub{font-size:11px;color:var(--txt2);margin-top:2px;}
+/* toggle switch */
+.tog{position:relative;width:40px;height:22px;flex-shrink:0;}
+.tog input{opacity:0;width:0;height:0;}
+.tog-sl{position:absolute;inset:0;background:var(--bdr2);border-radius:22px;
+  cursor:pointer;transition:.3s;}
+.tog-sl:before{content:'';position:absolute;width:16px;height:16px;left:3px;top:3px;
+  background:#fff;border-radius:50%;transition:.3s;}
+.tog input:checked + .tog-sl{background:var(--blue);}
+.tog input:checked + .tog-sl:before{transform:translateX(18px);}
+.sm-footer{display:flex;gap:10px;padding:16px 22px;border-top:1px solid var(--bdr);
+  background:var(--bg3);}
+.sm-status{padding:10px 14px;border-radius:var(--r);font-size:12px;
+  margin-bottom:14px;display:none;line-height:1.6;}
+.sm-status.ok{background:var(--green-g);color:var(--green);border:1px solid rgba(34,197,94,.2);}
+.sm-status.err{background:var(--red-g);color:var(--red);border:1px solid rgba(239,68,68,.2);}
+.sm-status.info{background:var(--blue-g);color:var(--blue);border:1px solid rgba(59,130,246,.2);}
+.sm-divider{border:none;border-top:1px solid var(--bdr);margin:18px 0;}
+.sm-section-title{font-size:10px;font-weight:700;color:var(--txt3);
+  text-transform:uppercase;letter-spacing:.6px;margin-bottom:12px;}
+.sm-hint{font-size:10px;color:var(--txt3);margin-top:5px;line-height:1.4;}
+
 /* BUTTONS */
 .btn{display:inline-flex;align-items:center;gap:5px;padding:6px 13px;border-radius:var(--r);font-size:12px;font-weight:600;cursor:pointer;border:none;transition:all .2s;white-space:nowrap;}
 .btn-pri{background:var(--blue);color:#fff;}
@@ -330,15 +394,79 @@ table.txn .td-num{color:var(--txt3);text-align:right;font-family:'SF Mono','Fira
 /* native datalist dropdown dark */
 input[list]::-webkit-calendar-picker-indicator{opacity:0;pointer-events:none;}
 
+
 @media(max-width:900px){.stats-grid{grid-template-columns:repeat(2,1fr);}main{padding:10px;}}
 @media(max-width:560px){.stats-grid{grid-template-columns:1fr;}.last-upd{display:none;}}
 </style>
 </head>
 <body>
 
+
+
+
 <div id="lov"><div class="spin"></div><p class="spin-lbl" id="spin-lbl">Processing…</p></div>
 <div id="toast"></div>
 
+<!-- SETTINGS MODAL -->
+<div id="sm">
+  <div class="sm-card">
+    <div class="sm-hdr">
+      <h3>🔗 Connect to Metabase</h3>
+      <button class="sm-close" onclick="closeSM()">✕</button>
+    </div>
+    <div class="sm-body">
+
+      <div style="background:var(--blue-g);border:1px solid rgba(59,130,246,.2);border-radius:var(--r);padding:10px 14px;margin-bottom:18px;font-size:12px;color:var(--blue);line-height:1.5;">
+        🔗 Fetches directly from Metabase — no file upload needed.<br>
+        <span style="color:var(--txt3);">Data auto-refreshes on schedule after connecting.</span>
+      </div>
+      <input type="hidden" id="sm-enabled" value="1">
+
+      <div class="sm-section-title">Metabase Question URL</div>
+      <div class="sm-row">
+        <label class="sm-label">Paste Question Link</label>
+        <input class="sm-inp" id="sm-qurl" type="url"
+               placeholder="https://metabase.wiom.in/question/11227-…"
+               value="https://metabase.wiom.in/question/11227-new-csp-app-partner-wallet-transaction-report-prod-db-public-t-account-balance-sheet1-new?From=&amp;To=&amp;PARTNER_ID=&amp;CSP_ID=&amp;WALLET_SOURCE=NEW_WALLET"
+               style="font-size:11px;">
+        <div class="sm-hint">Base URL and Question ID are extracted automatically</div>
+      </div>
+
+      <hr class="sm-divider">
+      <div class="sm-section-title">Login Credentials</div>
+      <div class="sm-row">
+        <label class="sm-label">Email</label>
+        <input class="sm-inp" id="sm-email" type="email"
+               placeholder="you@wiom.in" autocomplete="username">
+      </div>
+      <div class="sm-row">
+        <label class="sm-label">Password</label>
+        <input class="sm-inp" id="sm-pass" type="password"
+               placeholder="••••••••" autocomplete="current-password">
+      </div>
+
+      <hr class="sm-divider">
+      <div class="sm-row">
+        <label class="sm-label">Refresh Every</label>
+        <select class="sm-inp" id="sm-interval">
+          <option value="15">Every 15 minutes</option>
+          <option value="30">Every 30 minutes</option>
+          <option value="60" selected>Every 1 hour</option>
+          <option value="120">Every 2 hours</option>
+          <option value="240">Every 4 hours</option>
+          <option value="1440">Once a day</option>
+        </select>
+      </div>
+
+      <!-- Status message -->
+      <div class="sm-status" id="sm-status"></div>
+    </div>
+    <div class="sm-footer">
+      <button class="btn btn-ghost" style="flex:1" onclick="testConnection()">🔌 Test Connection</button>
+      <button class="btn btn-pri" style="flex:1" onclick="saveSettings()">🔗 Connect &amp; Sync</button>
+    </div>
+  </div>
+</div>
 
 <!-- HEADER -->
 <header class="hdr">
@@ -351,12 +479,18 @@ input[list]::-webkit-calendar-picker-indicator{opacity:0;pointer-events:none;}
     </div>
     <div class="hdr-right">
       <span class="last-upd" id="last-upd"></span>
+      <!-- Auto-sync status -->
+      <div class="sync-badge" id="sync-badge" title="Click to open settings" onclick="openSM()">
+        <span class="sdot" id="sync-dot"></span>
+        <span id="sync-lbl">Auto-sync</span>
+      </div>
+      <button class="btn btn-ghost" id="btn-sync" style="display:none;font-size:11px;" onclick="manualSync()">🔄 Sync Now</button>
+      <button class="btn btn-ghost" style="font-size:18px;padding:4px 8px;line-height:1;" onclick="openSM()" title="Auto-Sync Settings">⚙️</button>
       <button class="btn btn-success" id="btn-exp" style="display:none" onclick="exportData()">⬇ Download (.xlsx)</button>
       <label class="btn btn-warn btn-upload">
         ⬆ Upload File
         <input type="file" id="hdr-file" accept=".csv,.tsv,.txt,.xlsx,.xls" onchange="handleHdrUpload(event)">
       </label>
-      <button class="btn btn-danger" id="btn-clr" style="display:none" onclick="confirmClearAll()">🗑 Clear All Data</button>
     </div>
   </div>
 </header>
@@ -436,7 +570,7 @@ input[list]::-webkit-calendar-picker-indicator{opacity:0;pointer-events:none;}
   <div class="ucard">
     <div class="ucard-hdr">
       <h2>📂 Upload Wallet Report</h2>
-      <p>Upload CSV or Excel file — stored permanently in browser</p>
+      <p>Upload CSV or Excel from Metabase — stored permanently in browser</p>
     </div>
     <div class="ucard-body">
       <div class="dzone" id="dzone"
@@ -452,6 +586,7 @@ input[list]::-webkit-calendar-picker-indicator{opacity:0;pointer-events:none;}
       <div class="ustatus" id="ustatus"></div>
       <div class="steps">
         <div class="step-title">How to get the file</div>
+        <div class="step"><div class="snum">1</div><div class="stxt">Open <a href="https://metabase.wiom.in/question/11227" target="_blank" style="color:var(--blue)">Report #11227</a> on Metabase → WALLET_SOURCE = NEW_WALLET</div></div>
         <div class="step"><div class="snum">2</div><div class="stxt">Click <strong>Download ↓</strong> → CSV or Excel (.xlsx)</div></div>
         <div class="step"><div class="snum">3</div><div class="stxt">Drop or click above to upload</div></div>
       </div>
@@ -576,14 +711,12 @@ function showDash(){
   $('dashboard-body').style.display='block';
   $('filter-bar').style.display='flex';
   $('btn-exp').style.display='';
-  $('btn-clr').style.display='';
 }
 function showLand(){
   $('upload-landing').style.display='flex';
   $('dashboard-body').style.display='none';
   $('filter-bar').style.display='none';
   $('btn-exp').style.display='none';
-  $('btn-clr').style.display='none';
 }
 
 /* ── DATE RANGE ────────────────────────────── */
@@ -1038,24 +1171,296 @@ async function processFile(file,ctx){
   }finally{hl();}
 }
 
-/* ── CLEAR ALL DATA ─────────────────────────── */
-async function confirmClearAll(){
-  if(!confirm('⚠️ This will permanently delete ALL stored records.\nThis cannot be undone.\n\nProceed?')) return;
-  sl('Clearing database…');
-  try{
-    await dbClear(S.db);
-    S.raw=[];
-    showLand();
-    $('last-upd').textContent='';
-    toast('All data cleared. Upload a fresh file.','info');
-  }catch(e){toast('Clear failed: '+e.message,'error');}
-  finally{hl();}
-}
-
 /* ── HANDLERS ──────────────────────────────── */
 function handleDrop(e){e.preventDefault();$('dzone').classList.remove('over');const f=e.dataTransfer.files[0];if(f) processFile(f,'land');}
 function handleLandUpload(e){const f=e.target.files[0];if(f) processFile(f,'land');e.target.value='';}
 function handleHdrUpload(e){const f=e.target.files[0];if(f) processFile(f,'hdr');e.target.value='';}
+
+
+/* ── METABASE AUTO-SYNC ─────────────────────── */
+const MB = { token:null, tokenTime:0, timer:null, countdownTimer:null, syncing:false, lastSync:null, nextSync:null, lastError:null };
+const MB_KEYS = { qurl:'ww_mb_qurl', email:'ww_mb_email', pass:'ww_mb_pass', interval:'ww_mb_interval', enabled:'ww_mb_enabled', lastSync:'ww_mb_last' };
+const DEFAULT_QURL = 'https://metabase.wiom.in/question/11227-new-csp-app-partner-wallet-transaction-report-prod-db-public-t-account-balance-sheet1-new?From=&To=&PARTNER_ID=&CSP_ID=&WALLET_SOURCE=NEW_WALLET';
+
+/* Parse base URL and question ID from a Metabase question URL */
+function parseQuestionURL(qurl){
+  try {
+    const u = new URL(qurl);
+    const base = u.origin;                         // https://metabase.wiom.in
+    const seg  = u.pathname.split('/').filter(Boolean); // ['question','11227-...']
+    const qSeg = seg.find(s=>/^\d+/.test(s)) || '11227';
+    const qid  = qSeg.match(/^(\d+)/)[1];          // '11227'
+    return { base, qid };
+  } catch(e){
+    return { base:'', qid:'11227' };
+  }
+}
+
+function mbCfg(){
+  const qurl = localStorage.getItem(MB_KEYS.qurl) || DEFAULT_QURL;
+  const { base, qid } = parseQuestionURL(qurl);
+  return {
+    qurl,
+    url:      base,
+    qid,
+    email:    localStorage.getItem(MB_KEYS.email)    || '',
+    pass:     localStorage.getItem(MB_KEYS.pass)     || '',
+    interval: parseInt(localStorage.getItem(MB_KEYS.interval) || '60'),
+    enabled:  localStorage.getItem(MB_KEYS.enabled)  === '1'
+  };
+}
+
+/* Settings modal open/close */
+function openSM(){
+  const c=mbCfg();
+  $('sm-qurl').value    = c.qurl || DEFAULT_QURL;
+  $('sm-email').value   = c.email;
+  $('sm-pass').value    = c.pass;
+  $('sm-interval').value= String(c.interval);
+  if(MB.lastError){
+    smStatus('Last error: '+MB.lastError,'err');
+  } else {
+    $('sm-status').style.display='none';
+  }
+  $('sm').classList.add('show');
+}
+function closeSM(){ $('sm').classList.remove('show'); }
+/* backdrop click — wired in init() after DOM ready */
+
+function smStatus(msg, type){
+  const el=$('sm-status');
+  el.textContent=msg; el.className=`sm-status ${type}`; el.style.display='block';
+}
+
+async function testConnection(){
+  const qurl=$('sm-qurl').value.trim();
+  const email=$('sm-email').value.trim();
+  const pass=$('sm-pass').value;
+  const {base:url, qid} = parseQuestionURL(qurl);
+  if(!url||!email||!pass){ smStatus('Please fill in the question URL, email, and password.','err'); return; }
+  smStatus(`Testing connection to ${url} (Question #${qid})…`,'info');
+  try {
+    const tok = await mbAuth(url, email, pass);
+    smStatus(`✅ Connected! Metabase session OK — Question #${qid} ready to sync.`,'ok');
+    MB.token = tok; MB.tokenTime = Date.now();
+  } catch(err){
+    smStatus(`❌ ${err.message}`,'err');
+  }
+}
+
+function saveSettings(){
+  const qurl=$('sm-qurl').value.trim()||DEFAULT_QURL;
+  const email=$('sm-email').value.trim();
+  const pass=$('sm-pass').value;
+  const interval=parseInt($('sm-interval').value)||60;
+  const enabled = true;
+  const {base:url} = parseQuestionURL(qurl);
+
+  if(!url||!email||!pass){
+    smStatus('Please fill in the question URL, email, and password.','err'); return;
+  }
+
+  localStorage.setItem(MB_KEYS.qurl, qurl);
+  localStorage.setItem(MB_KEYS.email, email);
+  localStorage.setItem(MB_KEYS.pass, pass);
+  localStorage.setItem(MB_KEYS.interval, interval);
+  localStorage.setItem(MB_KEYS.enabled, enabled?'1':'0');
+
+  MB.token=null; // force re-auth
+  // Always enable when credentials are saved
+  localStorage.setItem(MB_KEYS.enabled,'1');
+  closeSM();
+  startAutoSync();
+  syncFromMetabase(); // fetch immediately
+  toast('Connected! Fetching data from Metabase…','success');
+}
+
+/* Metabase auth → session token
+   Tries both field names (username / email) and both credential modes */
+async function mbAuth(url, email, pass){
+  const endpoint = `${url}/api/session`;
+  // Attempt 1: standard JSON auth with credentials included (sends browser cookies)
+  // Attempt 2: same but 'omit' credentials (no cookies)
+  // Metabase accepts both 'username' and 'email' depending on version
+  const bodies = [
+    {username: email, password: pass},
+    {email:    email, password: pass}
+  ];
+  let lastErr = '';
+  for (const creds of ['include','omit']){
+    for (const body of bodies){
+      try{
+        const r = await fetch(endpoint, {
+          method:'POST',
+          headers:{'Content-Type':'application/json'},
+          credentials: creds,
+          body: JSON.stringify(body)
+        });
+        if(r.ok){
+          const d = await r.json();
+          if(d.id) return d.id;
+        }
+        if(r.status===401||r.status===400||r.status===422){
+          const txt = await r.text().catch(()=>'');
+          lastErr = `Invalid credentials (${r.status}): ${txt.slice(0,120)}`;
+          continue; // try other body format
+        }
+        const txt = await r.text().catch(()=>'');
+        lastErr = `Auth failed (${r.status}): ${txt.slice(0,120)}`;
+      } catch(e){
+        // Network / CORS failure
+        const isCors = e instanceof TypeError && /fetch|network|CORS/i.test(e.message);
+        lastErr = isCors
+          ? 'CORS blocked — open this file from a web server (e.g. localhost) or ask your Metabase admin to allow this origin.'
+          : `Network error: ${e.message}`;
+      }
+    }
+  }
+  throw new Error(lastErr || 'Authentication failed. Check credentials.');
+}
+
+/* Fetch question as CSV text */
+async function mbFetchCSV(url, token, qid){
+  const r = await fetch(`${url}/api/card/${qid}/query/csv`, {
+    method:'POST',
+    headers:{'X-Metabase-Session':token,'Content-Type':'application/json'},
+    credentials:'include',
+    body: JSON.stringify({})
+  });
+  if(!r.ok){
+    const body = await r.text().catch(()=>'');
+    throw new Error(`Query failed (${r.status}): ${body.slice(0,120)}`);
+  }
+  return r.text();
+}
+
+/* Detect runtime environment */
+function isLocalProxy(){
+  return location.protocol==='http:' && location.hostname==='localhost' && location.port==='8765';
+}
+function isNetlify(){
+  // Running on Netlify — use serverless function endpoint
+  return location.protocol==='https:' && (
+    location.hostname.endsWith('.netlify.app') || location.hostname.endsWith('.netlify.com')
+  );
+}
+function isWebHosted(){
+  // Any real HTTP/HTTPS host (GitHub Pages, Netlify, any server) — can fetch local data file
+  return location.protocol==='https:' || (location.protocol==='http:' && location.hostname!=='');
+}
+
+/* Full sync cycle */
+async function syncFromMetabase(){
+  const cfg = mbCfg();
+  if(MB.syncing) return;
+
+  MB.syncing = true;
+  updateSyncUI('syncing');
+
+  try {
+    let csv;
+
+    if(isLocalProxy()){
+      // Running via sync_proxy.py — fetch from local proxy endpoint (no CORS)
+      const r = await fetch('/mb-sync');
+      if(!r.ok){ const msg=await r.text().catch(()=>''); throw new Error(`Proxy error: ${msg.slice(0,200)}`); }
+      csv = await r.text();
+    } else if(isNetlify()){
+      // Running on Netlify — use serverless function (server-side, no CORS)
+      const r = await fetch('/.netlify/functions/mb-sync');
+      if(!r.ok){ const msg=await r.text().catch(()=>''); throw new Error(`Netlify function error: ${msg.slice(0,200)}`); }
+      csv = await r.text();
+    } else {
+      // Direct Metabase API — requires CORS to be allowed by server
+      if(!cfg.url || !cfg.email || !cfg.pass){
+        throw new Error('No credentials. Click ⚙️ to configure, or run sync_proxy.py for automatic sync.');
+      }
+      if(!MB.token || (Date.now()-MB.tokenTime) > 12*3600*1000){
+        MB.token = await mbAuth(cfg.url, cfg.email, cfg.pass);
+        MB.tokenTime = Date.now();
+      }
+      csv = await mbFetchCSV(cfg.url, MB.token, cfg.qid);
+    }
+
+    const parsed = Papa.parse(csv_final, {header:true, skipEmptyLines:true, dynamicTyping:false});
+    const newRows = normalise(parsed.data);
+
+    const before = await dbCount(S.db);
+    await dbPut(S.db, newRows);
+    const after  = await dbCount(S.db);
+    const added  = after - before;
+
+    const dbRows = await dbAll(S.db);
+    S.raw = dbRows.map(r=>({...r, date:new Date(r.dateISO)}));
+    if(S.raw.length){ showDash(); populateDropdowns(); applyFilters(); $('btn-txn').style.display=''; }
+
+    MB.lastSync = new Date();
+    MB.nextSync = new Date(MB.lastSync.getTime() + cfg.interval*60*1000);
+    localStorage.setItem(MB_KEYS.lastSync, MB.lastSync.toISOString());
+
+    updateSyncUI('ok');
+    $('last-upd').textContent = 'Synced '+MB.lastSync.toLocaleTimeString('en-IN');
+    if(added>0) toast(`Auto-sync: ${added} new records added ✓`,'success');
+    else        toast('Auto-sync: data is up to date','info');
+
+  } catch(err){
+    MB.token = null; // force re-auth next time
+    MB.lastError = err.message;
+    MB.nextSync = new Date(Date.now() + mbCfg().interval*60*1000);
+    updateSyncUI('err', err.message);
+    console.error('Metabase sync error:', err);
+    toast('⚠️ Sync failed — click the red badge for details','error');
+  } finally {
+    MB.syncing = false;
+  }
+}
+
+function manualSync(){ MB.token=null; syncFromMetabase(); }
+
+/* Start/restart interval timer */
+function startAutoSync(){
+  if(MB.timer)      clearInterval(MB.timer);
+  if(MB.countdownTimer) clearInterval(MB.countdownTimer);
+
+  const cfg = mbCfg();
+  if(!cfg.enabled){ updateSyncUI('off'); return; }
+
+  $('btn-sync').style.display='';
+  MB.nextSync = new Date(Date.now() + cfg.interval*60*1000);
+  MB.timer = setInterval(syncFromMetabase, cfg.interval*60*1000);
+
+  // Countdown ticker every 30s
+  MB.countdownTimer = setInterval(()=>{
+    if(!MB.syncing) updateSyncUI(MB.lastSync?'ok':'off');
+  }, 30000);
+
+  updateSyncUI(MB.lastSync?'ok':'off');
+}
+
+/* Update the header sync badge */
+function updateSyncUI(state, errMsg){
+  const badge=$('sync-badge'), dot=$('sync-dot'), lbl=$('sync-lbl');
+  badge.style.display='flex';
+
+  const minsLeft = MB.nextSync ? Math.max(0,Math.round((MB.nextSync-Date.now())/60000)) : null;
+  const nextStr  = minsLeft!==null ? (minsLeft<=0?'now':`in ${minsLeft}m`) : '';
+
+  if(state==='syncing'){
+    badge.className='sync-badge syncing'; dot.className='sdot spin-dot';
+    lbl.textContent='Syncing…';
+  } else if(state==='ok'){
+    badge.className='sync-badge ok'; dot.className='sdot ok';
+    const t=MB.lastSync?MB.lastSync.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'}):'';
+    lbl.textContent=`Synced ${t}${nextStr?' · Next '+nextStr:''}`;
+  } else if(state==='err'){
+    badge.className='sync-badge err'; dot.className='sdot err';
+    lbl.textContent='Sync failed · Click to fix';
+    if(errMsg) badge.title=errMsg;
+  } else { // off
+    badge.className='sync-badge off'; dot.className='sdot off';
+    lbl.textContent='Auto-sync off';
+  }
+}
 
 /* ── INIT ──────────────────────────────────── */
 async function init(){
@@ -1065,9 +1470,66 @@ async function init(){
     if(sessionStorage.getItem('migrated')==='1'){sessionStorage.removeItem('migrated');$('mig').classList.add('show');}
     await loadFromDB();
 
+    // Auto-load pre-fetched data file (GitHub Pages / any web server)
+    if(isWebHosted()){
+      await autoLoadDataFile();
+    }
+
+    // Auto-sync on Netlify or local proxy (Metabase API proxy)
+    if(isNetlify() || isLocalProxy()){
+      const lastISO=localStorage.getItem(MB_KEYS.lastSync);
+      if(lastISO) MB.lastSync=new Date(lastISO);
+      startAutoSync();
+      const age=MB.lastSync?Date.now()-MB.lastSync.getTime():Infinity;
+      const interval=parseInt(localStorage.getItem(MB_KEYS.interval)||'60');
+      if(age>interval*60*1000) syncFromMetabase();
+    }
   }catch(err){hl();showLand();console.error(err);toast('Could not open database. Use Chrome or Edge.','error');}
 }
 
+/* Auto-load data/latest.csv if it exists on the server (GitHub Pages / web hosting) */
+async function autoLoadDataFile(){
+  try{
+    const r = await fetch('./data/latest.csv', {cache:'no-cache'});
+    if(!r.ok) return; // file not found — fine, skip silently
+    const csvText = await r.text();
+    if(!csvText || csvText.length < 10) return;
+
+    // Check last-sync timestamp
+    let syncTime = '';
+    try{
+      const ts = await fetch('./data/last-sync.txt',{cache:'no-cache'});
+      if(ts.ok) syncTime = (await ts.text()).trim();
+    }catch(e){}
+
+    sl('Loading latest data from server…');
+    const rows = normalise(Papa.parse(csvText,{header:true,skipEmptyLines:true,dynamicTyping:false}).data);
+    const before = await dbCount(S.db);
+    await dbPut(S.db, rows);
+    const after = await dbCount(S.db);
+    const added = after - before;
+
+    const dbRows = await dbAll(S.db);
+    S.raw = dbRows.map(r=>({...r,date:new Date(r.dateISO)}));
+    showDash();
+    populateDropdowns();
+    applyFilters();
+    $('btn-txn').style.display='';
+
+    const syncLabel = syncTime ? ' · Data as of ' + new Date(syncTime).toLocaleString('en-IN') : '';
+    $('last-upd').textContent = 'Auto-loaded' + syncLabel;
+
+    if(added>0){
+      toast(`Auto-loaded ${added} new records ✓`,'success');
+    } else {
+      toast('Data up to date','info');
+    }
+  }catch(e){
+    console.warn('[autoLoadDataFile]', e.message);
+  }finally{
+    hl();
+  }
+}
 
 document.addEventListener('DOMContentLoaded', init);
 </script>
