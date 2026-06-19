@@ -1048,57 +1048,11 @@ async function init(){
     if(sessionStorage.getItem('migrated')==='1'){sessionStorage.removeItem('migrated');$('mig').classList.add('show');}
     await loadFromDB();
 
-    // Auto-load pre-fetched CSV (GitHub Pages)
-    if(location.protocol==='https:' || (location.protocol==='http:' && location.hostname!=='')){
-      await autoLoadDataFile();
-    }
-
   }catch(err){hl();showLand();console.error(err);toast('Could not open database. Use Chrome or Edge.','error');}
 }
 
-/* Auto-load data/latest.csv if it exists on the server (GitHub Pages / web hosting) */
-async function autoLoadDataFile(){
-  try{
-    const r = await fetch('./data/latest.csv', {cache:'no-cache'});
-    if(!r.ok) return; // file not found — fine, skip silently
-    const csvText = await r.text();
-    if(!csvText || csvText.length < 10) return;
-
-    // Check last-sync timestamp
-    let syncTime = '';
-    try{
-      const ts = await fetch('./data/last-sync.txt',{cache:'no-cache'});
-      if(ts.ok) syncTime = (await ts.text()).trim();
-    }catch(e){}
-
-    sl('Loading latest data from server…');
-    const rows = normalise(Papa.parse(csvText,{header:true,skipEmptyLines:true,dynamicTyping:false}).data);
-    // MERGE mode: upsert by dedup key (ID||ADDED_TIME||CSP_ID) — manual uploads are preserved
-    const before = await dbCount(S.db);
-    await dbPut(S.db, rows);
-    const after = await dbCount(S.db);
-    const added = after - before;
-
-    const dbRows = await dbAll(S.db);
-    S.raw = dbRows.map(r=>({...r,date:new Date(r.dateISO)}));
-    showDash();
-    populateDropdowns();
-    applyFilters();
-    $('btn-txn').style.display='';
-
-    const syncLabel = syncTime ? ' · Data as of ' + new Date(syncTime).toLocaleString('en-IN') : '';
-    $('last-upd').textContent = 'Auto-loaded' + syncLabel;
-    if(added > 0) toast(`Auto-loaded: ${added.toLocaleString('en-IN')} new records added ✓`,'success');
-    else toast(`Data up to date (${rows.length.toLocaleString('en-IN')} records)`,'info');
-  }catch(e){
-    console.warn('[autoLoadDataFile]', e.message);
-  }finally{
-    hl();
-  }
-}
 
 document.addEventListener('DOMContentLoaded', init);
 </script>
 </body>
 </html>
-                                                               
