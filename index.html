@@ -6,6 +6,7 @@
 <title>CSP Wallet Dashboard | Wiom</title>
 <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="https://accounts.google.com/gsi/client" async defer></script>
 <style>
 :root{
   --bg:#0d1117;--bg2:#161b22;--bg3:#1c2230;--bg4:#21283a;
@@ -27,19 +28,16 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 ::-webkit-scrollbar-track{background:var(--bg2);}
 ::-webkit-scrollbar-thumb{background:var(--bdr2);border-radius:3px;}
 
-/* LOADER */
 #lov{display:none;position:fixed;inset:0;background:rgba(13,17,23,.92);z-index:9000;align-items:center;justify-content:center;flex-direction:column;gap:14px;backdrop-filter:blur(4px);}
 .spin{width:44px;height:44px;border:3px solid var(--bg3);border-top-color:var(--blue);border-radius:50%;animation:spin .7s linear infinite;}
 @keyframes spin{to{transform:rotate(360deg);}}
 .spin-lbl{font-size:12px;color:var(--txt2);}
 
-/* TOAST */
 #toast{position:fixed;bottom:22px;right:22px;background:#0f172a;color:var(--txt);padding:11px 16px;border-radius:var(--r);font-size:12px;box-shadow:0 8px 32px rgba(0,0,0,.6);transform:translateY(80px);opacity:0;transition:all .3s;z-index:9999;max-width:360px;border:1px solid var(--bdr);}
 #toast.show{transform:translateY(0);opacity:1;}
 #toast.success{border-left:3px solid var(--green);}
 #toast.error{border-left:3px solid var(--red);}
 #toast.info{border-left:3px solid var(--blue);}
-/* MODAL */
 #modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:9500;align-items:center;justify-content:center;backdrop-filter:blur(4px);}
 #modal.show{display:flex;}
 .modal-box{background:var(--bg2);border:1px solid var(--bdr);border-radius:var(--rl);padding:30px;max-width:370px;width:90%;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.8);}
@@ -47,7 +45,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .modal-box p{font-size:13px;color:var(--txt2);margin-bottom:20px;line-height:1.6;}
 .modal-btns{display:flex;gap:10px;justify-content:center;}
 
-/* HEADER — sticky */
 .hdr{background:linear-gradient(135deg,#0d1117 0%,#1a2744 100%);border-bottom:1px solid var(--bdr);padding:0 20px;position:sticky;top:0;z-index:500;box-shadow:0 2px 16px rgba(0,0,0,.5);height:var(--hdr-h);}
 .hdr-inner{display:flex;align-items:center;justify-content:space-between;height:100%;gap:10px;}
 .hdr-left{display:flex;align-items:center;gap:10px;}
@@ -57,50 +54,11 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .hdr-right{display:flex;align-items:center;gap:7px;flex-wrap:wrap;}
 .last-upd{font-size:10px;color:var(--txt3);white-space:nowrap;}
 
-/* SYNC STATUS BADGE */
-.sync-badge{display:none;align-items:center;gap:5px;font-size:11px;font-weight:600;
-  padding:4px 10px;border-radius:20px;white-space:nowrap;border:1px solid;}
-.sync-badge.ok{background:var(--green-g);color:var(--green);border-color:rgba(34,197,94,.3);}
-.sync-badge.syncing{background:var(--blue-g);color:var(--blue);border-color:rgba(59,130,246,.3);}
-.sync-badge.err{background:var(--red-g);color:var(--red);border-color:rgba(239,68,68,.3);cursor:pointer;}
-.sync-badge.off{background:var(--bg3);color:var(--txt3);border-color:var(--bdr);}
-.sdot{width:7px;height:7px;border-radius:50%;flex-shrink:0;}
-.sdot.ok{background:var(--green);box-shadow:0 0 5px var(--green);}
-.sdot.spin-dot{background:var(--blue);animation:pulse 1s ease-in-out infinite;}
-.sdot.err{background:var(--red);}
-.sdot.off{background:var(--txt3);}
 @keyframes pulse{0%,100%{opacity:1;}50%{opacity:.3;}}
 
-/* SETTINGS MODAL */
 #sm{display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:9500;
   align-items:center;justify-content:center;backdrop-filter:blur(4px);}
 #sm.show{display:flex;}
-.sm-card{background:var(--bg2);border:1px solid var(--bdr);border-radius:var(--rl);
-  width:100%;max-width:480px;max-height:90vh;overflow-y:auto;
-  box-shadow:0 24px 64px rgba(0,0,0,.8);}
-.sm-hdr{display:flex;align-items:center;justify-content:space-between;
-  padding:18px 22px;border-bottom:1px solid var(--bdr);
-  background:linear-gradient(90deg,var(--bg3),var(--bg2));}
-.sm-hdr h3{font-size:15px;font-weight:700;color:var(--txt);}
-.sm-close{cursor:pointer;color:var(--txt3);font-size:20px;line-height:1;
-  background:none;border:none;padding:2px 6px;}
-.sm-close:hover{color:var(--txt);}
-.sm-body{padding:22px;}
-.sm-row{margin-bottom:16px;}
-.sm-label{display:block;font-size:11px;font-weight:700;color:var(--txt2);
-  text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;}
-.sm-inp{width:100%;padding:8px 12px;border:1px solid var(--bdr);border-radius:var(--r);
-  font-size:13px;color:var(--txt);background:var(--bg3);outline:none;
-  transition:border-color .2s;}
-.sm-inp:focus{border-color:var(--blue);box-shadow:0 0 0 2px var(--blue-g);}
-.sm-inp::placeholder{color:var(--txt3);}
-.sm-inp option{background:var(--bg2);}
-.sm-toggle-row{display:flex;align-items:center;justify-content:space-between;
-  background:var(--bg3);border:1px solid var(--bdr);border-radius:var(--r);
-  padding:10px 14px;margin-bottom:16px;}
-.sm-toggle-lbl{font-size:13px;font-weight:600;color:var(--txt);}
-.sm-toggle-sub{font-size:11px;color:var(--txt2);margin-top:2px;}
-/* toggle switch */
 .tog{position:relative;width:40px;height:22px;flex-shrink:0;}
 .tog input{opacity:0;width:0;height:0;}
 .tog-sl{position:absolute;inset:0;background:var(--bdr2);border-radius:22px;
@@ -109,19 +67,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
   background:#fff;border-radius:50%;transition:.3s;}
 .tog input:checked + .tog-sl{background:var(--blue);}
 .tog input:checked + .tog-sl:before{transform:translateX(18px);}
-.sm-footer{display:flex;gap:10px;padding:16px 22px;border-top:1px solid var(--bdr);
-  background:var(--bg3);}
-.sm-status{padding:10px 14px;border-radius:var(--r);font-size:12px;
-  margin-bottom:14px;display:none;line-height:1.6;}
-.sm-status.ok{background:var(--green-g);color:var(--green);border:1px solid rgba(34,197,94,.2);}
-.sm-status.err{background:var(--red-g);color:var(--red);border:1px solid rgba(239,68,68,.2);}
-.sm-status.info{background:var(--blue-g);color:var(--blue);border:1px solid rgba(59,130,246,.2);}
-.sm-divider{border:none;border-top:1px solid var(--bdr);margin:18px 0;}
-.sm-section-title{font-size:10px;font-weight:700;color:var(--txt3);
-  text-transform:uppercase;letter-spacing:.6px;margin-bottom:12px;}
-.sm-hint{font-size:10px;color:var(--txt3);margin-top:5px;line-height:1.4;}
 
-/* BUTTONS */
 .btn{display:inline-flex;align-items:center;gap:5px;padding:6px 13px;border-radius:var(--r);font-size:12px;font-weight:600;cursor:pointer;border:none;transition:all .2s;white-space:nowrap;}
 .btn-pri{background:var(--blue);color:#fff;}
 .btn-pri:hover{background:var(--blue-d);box-shadow:0 0 10px var(--blue-g);}
@@ -137,7 +83,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .btn-upload{position:relative;}
 .btn-upload input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;}
 
-/* FILTER BAR — sticky below header, single row */
 .filter-bar{
   background:var(--bg2);border-bottom:1px solid var(--bdr);
   padding:8px 20px;display:flex;gap:8px;align-items:center;
@@ -150,15 +95,12 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .filter-section{display:flex;align-items:center;gap:5px;flex-shrink:0;}
 .filter-sep{width:1px;height:24px;background:var(--bdr);margin:0 2px;flex-shrink:0;}
 .flbl{font-size:10px;font-weight:700;color:var(--txt3);text-transform:uppercase;letter-spacing:.6px;white-space:nowrap;}
-/* Base select */
 .fsel{padding:5px 8px;border:1px solid var(--bdr);border-radius:var(--r);font-size:12px;color:var(--txt);background:var(--bg3);cursor:pointer;outline:none;transition:border-color .2s;width:130px;flex-shrink:0;}
 .fsel:focus,.fsel:hover{border-color:var(--blue);}
 .fsel option{background:var(--bg2);}
-/* Specific widths */
 #f-period{width:130px;}
 #f-action{width:140px;}
-#f-remark{width:175px;} /* constrained — was expanding full width */
-#f-csp{width:130px;}
+#f-remark{width:175px;} #f-csp{width:130px;}
 #f-partner{width:130px;}
 .fdate{padding:5px 7px;border:1px solid var(--bdr);border-radius:var(--r);font-size:12px;color:var(--txt);background:var(--bg3);outline:none;transition:border-color .2s;cursor:pointer;width:130px;flex-shrink:0;}
 .fdate:focus{border-color:var(--blue);}
@@ -166,7 +108,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 #custom-range{display:none;align-items:center;gap:5px;flex-shrink:0;}
 #custom-range.show{display:flex;}
 
-/* BANNER */
 .banner{padding:8px 20px;font-size:12px;font-weight:500;display:none;align-items:center;gap:10px;flex-wrap:wrap;}
 .banner.show{display:flex;}
 .banner.added{background:rgba(34,197,94,.08);color:var(--green);border-bottom:1px solid rgba(34,197,94,.2);}
@@ -176,7 +117,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .mig-notice{background:var(--orange-g);color:var(--orange);padding:8px 20px;font-size:12px;display:none;align-items:center;gap:8px;border-bottom:1px solid rgba(245,158,11,.2);}
 .mig-notice.show{display:flex;}
 
-/* UPLOAD LANDING */
 #upload-landing{min-height:calc(100vh - var(--hdr-h));display:flex;align-items:center;justify-content:center;padding:40px 20px;background:radial-gradient(ellipse at top,#1a2744 0%,var(--bg) 60%);}
 .ucard{background:var(--bg2);border:1px solid var(--bdr);border-radius:var(--rl);width:100%;max-width:540px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.6);}
 .ucard-hdr{background:linear-gradient(135deg,#1a2744,#0d1b38);padding:22px 28px;border-bottom:1px solid var(--bdr);}
@@ -202,11 +142,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .stxt a{color:var(--blue);text-decoration:none;font-weight:600;}
 .stxt strong{color:var(--txt);}
 
-/* DASHBOARD */
 #dashboard-body{display:none;}
 main{padding:16px 20px;}
 
-/* STATS */
 .stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px;}
 .stat{background:var(--bg2);border:1px solid var(--bdr);border-radius:var(--rl);padding:14px 16px;position:relative;overflow:hidden;transition:all .2s;}
 .stat:hover{border-color:var(--bdr2);transform:translateY(-1px);box-shadow:0 4px 20px rgba(0,0,0,.3);}
@@ -224,7 +162,6 @@ main{padding:16px 20px;}
 .stat.s-purple .stat-val{color:var(--purple);}
 .stat-sub{font-size:10px;color:var(--txt3);}
 
-/* CARD */
 .card{background:var(--bg2);border:1px solid var(--bdr);border-radius:var(--rl);margin-bottom:16px;overflow:hidden;}
 .card-hdr{
   display:flex;align-items:center;justify-content:space-between;padding:12px 16px;
@@ -236,12 +173,9 @@ main{padding:16px 20px;}
 .card-hdr-right{display:flex;gap:7px;align-items:center;}
 .rec-count{font-size:11px;color:var(--txt3);background:var(--bg3);padding:3px 10px;border-radius:12px;border:1px solid var(--bdr);}
 
-/* PIVOT TABLE */
 .pivot-wrap{overflow-x:auto;overflow-y:auto;max-height:calc(100vh - 340px);min-height:200px;}
 table.pv{width:max-content;min-width:100%;border-collapse:collapse;font-size:12px;}
 
-/* STICKY THEAD — within pivot-wrap scroll */
-/* Row 1 sticks at top:0, Row 2 sticks at top:[row1-height] set by JS */
 table.pv thead tr:first-child th{
   position:sticky;top:0;z-index:30;padding:0;
   white-space:nowrap;
@@ -249,17 +183,14 @@ table.pv thead tr:first-child th{
   transform:translateZ(0);
 }
 table.pv thead tr:last-child th{
-  position:sticky;top:33px; /* updated by JS after render */
-  z-index:30;padding:0;
+  position:sticky;top:33px;   z-index:30;padding:0;
   white-space:nowrap;
   backface-visibility:hidden;-webkit-backface-visibility:hidden;
   transform:translateZ(0);
 }
-/* Corner rowspan=2 cells */
 table.pv thead .hcol1{position:sticky;left:0;z-index:40 !important;}
 table.pv thead .hcol2{position:sticky;left:var(--c1);z-index:40 !important;border-right:2px solid var(--bdr2);}
 
-/* Header inner wrappers */
 .th-inner{
   padding:9px 12px;font-size:10px;font-weight:700;
   text-transform:uppercase;letter-spacing:.5px;color:var(--txt2);
@@ -269,7 +200,6 @@ table.pv thead .hcol2{position:sticky;left:var(--c1);z-index:40 !important;borde
 .hcol1 .th-inner{min-width:var(--c1);background:var(--bg3);}
 .hcol2 .th-inner{min-width:var(--c2);background:var(--bg3);}
 
-/* Month group header */
 .th-month-wrap{text-align:center;border-left:1px solid var(--bdr2);}
 .th-month-inner{
   padding:8px 16px;
@@ -278,7 +208,6 @@ table.pv thead .hcol2{position:sticky;left:var(--c1);z-index:40 !important;borde
   text-align:center;min-width:200px;
   border-bottom:1px solid rgba(59,130,246,.4);
 }
-/* Total group header */
 .th-total-wrap{text-align:center;border-left:2px solid var(--bdr2);}
 .th-total-inner{
   padding:8px 16px;
@@ -287,7 +216,6 @@ table.pv thead .hcol2{position:sticky;left:var(--c1);z-index:40 !important;borde
   text-align:center;min-width:200px;
   border-bottom:1px solid rgba(6,182,212,.3);
 }
-/* Sub-headers row */
 .th-sub-inner{
   padding:7px 12px;font-size:10px;font-weight:700;
   text-transform:uppercase;letter-spacing:.4px;
@@ -305,7 +233,6 @@ table.pv thead .hcol2{position:sticky;left:var(--c1);z-index:40 !important;borde
 }
 .th-sub-total-inner.amt{min-width:120px;}
 
-/* BODY CELLS */
 table.pv tbody td{padding:7px 11px;border-bottom:1px solid rgba(45,55,72,.6);vertical-align:middle;white-space:nowrap;transition:background .1s;}
 table.pv tbody tr:hover td{background:rgba(59,130,246,.04);}
 table.pv tbody tr:hover .dcol1,table.pv tbody tr:hover .dcol2{background:var(--bg4)!important;}
@@ -333,12 +260,10 @@ table.pv tbody tr:hover .dcol1,table.pv tbody tr:hover .dcol2{background:var(--b
 .ttc{background:rgba(6,182,212,.07);border-left:2px solid rgba(6,182,212,.2);font-weight:700;color:var(--teal);}
 .tta{background:rgba(6,182,212,.07);font-weight:700;}
 
-/* Subtotal */
 tr.sub-row td{background:rgba(59,130,246,.06)!important;border-top:1px dashed rgba(59,130,246,.2);}
 tr.sub-row .dcol1,tr.sub-row .dcol2{background:rgba(59,130,246,.1)!important;}
 tr.sub-row .ttc,tr.sub-row .tta{background:rgba(6,182,212,.12)!important;}
 
-/* Grand total — sticky bottom */
 tr.grand-total td{
   background:linear-gradient(90deg,#0f172a,#0d1b38)!important;
   color:var(--txt)!important;font-weight:700;
@@ -349,22 +274,18 @@ tr.grand-total td{
 tr.grand-total .dcol1,tr.grand-total .dcol2{background:#0a1020!important;z-index:12;}
 tr.grand-total .ttc,tr.grand-total .tta{background:rgba(6,182,212,.15)!important;color:var(--teal)!important;}
 
-/* Action badges */
 .ab{display:inline-block;padding:2px 8px;border-radius:12px;font-size:11px;font-weight:700;letter-spacing:.2px;max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;vertical-align:middle;}
 .ab-cr{background:var(--green-g);color:var(--green);border:1px solid rgba(34,197,94,.3);}
 .ab-dr{background:var(--red-g);color:var(--red);border:1px solid rgba(239,68,68,.3);}
 .ab-tr{background:var(--purple-g);color:var(--purple);border:1px solid rgba(168,85,247,.3);}
 .ab-def{background:var(--bg3);color:var(--txt2);border:1px solid var(--bdr);}
 
-/* Toggle */
 .toggle{display:inline-flex;align-items:center;justify-content:center;width:17px;height:17px;border-radius:4px;border:1px solid var(--bdr2);background:var(--bg3);color:var(--txt2);font-size:14px;font-weight:700;cursor:pointer;transition:all .2s;margin-right:5px;line-height:1;flex-shrink:0;vertical-align:middle;}
 .toggle:hover{border-color:var(--blue);color:var(--blue);background:var(--blue-g);}
 .toggle.exp{border-color:rgba(59,130,246,.5);color:var(--blue);background:var(--blue-g);}
 
-/* Group separator */
 tr.grp-start td{border-top:2px solid var(--bdr2);}
 
-/* TRANSACTION TABLE */
 .txn-bar{display:flex;align-items:center;justify-content:center;padding:12px 20px 0;gap:10px;}
 #txn-card{display:none;margin-bottom:16px;}
 .txn-wrap{overflow-x:auto;overflow-y:auto;max-height:400px;}
@@ -378,7 +299,6 @@ table.txn .td-amt-n{color:var(--red);font-weight:600;font-family:'SF Mono','Fira
 table.txn .td-num{color:var(--txt3);text-align:right;font-family:'SF Mono','Fira Code',monospace;}
 .txn-empty{text-align:center;padding:30px;color:var(--txt3);}
 
-/* COMBOBOX (searchable ID inputs) */
 .combo-wrap{position:relative;display:flex;align-items:center;flex-shrink:0;}
 .combo-inp{
   padding:5px 28px 5px 9px;border:1px solid var(--bdr);border-radius:var(--r);
@@ -391,82 +311,133 @@ table.txn .td-num{color:var(--txt3);text-align:right;font-family:'SF Mono','Fira
   cursor:pointer;color:var(--txt3);font-size:14px;line-height:1;display:none;
   background:none;border:none;padding:0;}
 .combo-clear:hover{color:var(--txt);}
-/* native datalist dropdown dark */
 input[list]::-webkit-calendar-picker-indicator{opacity:0;pointer-events:none;}
-
 
 @media(max-width:900px){.stats-grid{grid-template-columns:repeat(2,1fr);}main{padding:10px;}}
 @media(max-width:560px){.stats-grid{grid-template-columns:1fr;}.last-upd{display:none;}}
+
+.tab-nav{display:flex;background:var(--bg2);border-bottom:2px solid var(--bdr);padding:0 14px;position:sticky;top:56px;z-index:90;overflow-x:auto;flex-shrink:0;}
+.tab-btn{padding:9px 15px;font-size:12px;font-weight:600;color:var(--txt3);border:none;background:none;cursor:pointer;border-bottom:3px solid transparent;margin-bottom:-2px;transition:all .15s;white-space:nowrap;}
+.tab-btn:hover{color:var(--txt);}
+.tab-btn.active{color:var(--blue);border-bottom-color:var(--blue);}
+.tab-pane{display:none;}
+.tab-pane.active{display:block;}
+.rpt-filter-bar{display:none;flex-wrap:wrap;align-items:center;gap:6px;padding:8px 14px;background:var(--bg2);border-bottom:1px solid var(--bdr);position:sticky;top:95px;z-index:80;}
+.rpt-filter-bar.show{display:flex;}
+.rpt-land{display:flex;align-items:center;justify-content:center;min-height:60vh;}
+.rpt-land-inner{background:var(--bg2);border:1px solid var(--bdr);border-radius:var(--r);padding:32px;max-width:520px;width:100%;text-align:center;}
+.rpt-land-inner h2{font-size:18px;font-weight:700;color:var(--txt);margin-bottom:8px;}
+.rpt-land-inner p{font-size:13px;color:var(--txt3);margin-bottom:20px;}
+.rpt-dzone{border:2px dashed var(--bdr2);border-radius:var(--r);padding:32px 20px;cursor:pointer;transition:.2s;background:var(--bg3);position:relative;}
+.rpt-dzone:hover,.rpt-dzone.over{border-color:var(--blue);background:var(--blue-g);}
+.rpt-dzone input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;}
+.rpt-dzone .dzone-icon{font-size:32px;margin-bottom:8px;}
+.rpt-dzone .dzone-title{font-size:14px;font-weight:700;color:var(--txt);margin-bottom:4px;}
+.rpt-dzone .dzone-sub{font-size:11px;color:var(--txt3);}
+.rpt-ustatus{margin-top:10px;padding:8px 12px;border-radius:6px;font-size:12px;display:none;}
+.rpt-ustatus.ok{background:var(--green-g);color:var(--green);border:1px solid rgba(34,197,94,.3);}
+.rpt-ustatus.err{background:var(--red-g);color:var(--red);border:1px solid rgba(239,68,68,.3);}
+.rpt-wrap{max-width:1400px;margin:0 auto;padding:16px 18px;}
+.rpt-topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px;}
+.rpt-topbar h2{font-size:15px;font-weight:700;color:var(--txt);}
+.rpt-stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:16px;}
+.rpt-stat{background:var(--bg2);border:1px solid var(--bdr);border-radius:var(--r);padding:14px 16px;}
+.rpt-stat .rs-lbl{font-size:10px;font-weight:700;color:var(--txt3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px;}
+.rpt-stat .rs-val{font-size:20px;font-weight:700;color:var(--txt);font-family:'SF Mono','Fira Code',monospace;}
+.rpt-stat .rs-val.g{color:var(--green);}
+.rpt-stat .rs-val.b{color:var(--blue);}
+.rpt-stat .rs-val.r{color:var(--red);}
+.rpt-card{background:var(--bg2);border:1px solid var(--bdr);border-radius:var(--r);overflow:hidden;margin-bottom:14px;}
+.rpt-card-hdr{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-bottom:1px solid var(--bdr);background:var(--bg3);}
+.rpt-card-hdr span{font-size:12px;font-weight:700;color:var(--txt);}
+.rpt-card-hdr .rpt-search{padding:4px 9px;border:1px solid var(--bdr);border-radius:5px;background:var(--bg2);color:var(--txt);font-size:11px;width:170px;}
+.rpt-pv-wrap{overflow-x:auto;max-height:420px;overflow-y:auto;}
+table.rpt-pv{width:max-content;min-width:100%;border-collapse:collapse;font-size:12px;}
+table.rpt-pv thead tr:first-child th{background:var(--bg3);color:var(--txt2);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;padding:7px 12px;border-bottom:1px solid var(--bdr);position:sticky;top:0;z-index:20;white-space:nowrap;text-align:center;}
+table.rpt-pv thead tr:last-child th{background:var(--bg3);color:var(--txt3);font-size:10px;font-weight:600;padding:5px 12px;border-bottom:2px solid var(--bdr2);position:sticky;top:28px;z-index:20;white-space:nowrap;text-align:right;}
+table.rpt-pv thead tr:last-child th.l{text-align:left;}
+table.rpt-pv thead th.hcol1{position:sticky;left:0;z-index:40!important;text-align:left;}
+table.rpt-pv tbody td{padding:7px 12px;border-bottom:1px solid rgba(45,55,72,.5);white-space:nowrap;color:var(--txt);}
+table.rpt-pv tbody td.pcol1{position:sticky;left:0;background:var(--bg2);z-index:10;font-size:12px;color:var(--txt);}
+table.rpt-pv tbody td.num{text-align:right;font-family:'SF Mono','Fira Code',monospace;font-size:11px;}
+table.rpt-pv tbody tr:hover td{background:rgba(59,130,246,.04);}
+table.rpt-pv tbody tr:hover td.pcol1{background:var(--bg3);}
+table.rpt-pv tbody tr.rpt-month-row td{background:var(--bg3);font-weight:700;color:var(--txt);}
+table.rpt-pv tbody tr.rpt-month-row td.pcol1{background:var(--bg4);}
+table.rpt-pv tbody tr.rpt-sub-row td{background:var(--bg2);}
+table.rpt-pv tbody tr.rpt-sub-row td.pcol1{padding-left:24px;color:var(--txt2);font-size:11px;}
+table.rpt-pv tbody tr.rpt-date-row td{background:rgba(59,130,246,.04);}
+table.rpt-pv tbody tr.rpt-date-row td.pcol1{padding-left:20px;color:var(--blue);font-size:11px;font-weight:600;}
+table.rpt-pv tbody tr.rpt-grand-total td{background:var(--bg4);font-weight:700;color:var(--txt);border-top:2px solid var(--bdr2);}
+table.rpt-pv tbody td.exp-toggle{cursor:pointer;user-select:none;color:var(--blue);}
+.rpt-txn-card{display:none;}.rpt-txn{width:max-content;min-width:100%;border-collapse:collapse;font-size:11px;}
+table.rpt-txn thead th{position:sticky;top:0;background:var(--bg3);color:var(--txt2);font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;padding:6px 10px;border-bottom:1px solid var(--bdr);}
+table.rpt-txn thead th.r{text-align:right;}
+table.rpt-txn tbody td{padding:5px 10px;border-bottom:1px solid rgba(45,55,72,.4);color:var(--txt);white-space:nowrap;}
+table.rpt-txn tbody td.r{text-align:right;font-family:'SF Mono','Fira Code',monospace;}
+table.rpt-txn tbody tr:hover td{background:rgba(59,130,246,.04);}
+/* ── Reconciliation Gap Transactions ── */
+.rec-gap-section{margin-bottom:10px;border:1px solid var(--bdr);border-radius:var(--r);overflow:hidden;}
+.rec-gap-sec-hdr{display:flex;align-items:center;padding:10px 14px;background:var(--bg2);cursor:pointer;user-select:none;}
+.rec-gap-sec-hdr:hover{background:var(--bg3);}
+.rec-gap-sub-hdr{display:flex;align-items:center;justify-content:space-between;padding:7px 12px;background:var(--bg3);border-top:1px solid var(--bdr);}
+.rec-gap-sub-empty{padding:8px 12px;font-size:11px;color:var(--txt3);border-top:1px solid var(--bdr);}
+
+/* ── Email Gate ── */
+#auth-gate{position:fixed;inset:0;z-index:99999;background:linear-gradient(135deg,#080c12 0%,#0d1629 50%,#080c12 100%);display:flex;align-items:center;justify-content:center;}
+.gate-card{background:var(--bg2);border:1px solid var(--bdr);border-radius:16px;padding:40px 36px;width:100%;max-width:400px;box-shadow:0 24px 80px rgba(0,0,0,.8),0 0 0 1px rgba(59,130,246,.1);text-align:center;position:relative;overflow:hidden;}
+.gate-card::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at 50% 0%,rgba(59,130,246,.08) 0%,transparent 70%);pointer-events:none;}
+.gate-logo{width:54px;height:54px;background:linear-gradient(135deg,var(--blue),#1d4ed8);border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:26px;margin:0 auto 18px;box-shadow:0 8px 24px rgba(59,130,246,.35);}
+.gate-title{font-size:20px;font-weight:800;color:var(--txt);margin-bottom:4px;letter-spacing:-.3px;}
+.gate-sub{font-size:12px;color:var(--txt3);margin-bottom:28px;line-height:1.5;}
+.gate-google-wrap{display:flex;justify-content:center;margin-bottom:14px;}
+.gate-err{font-size:11px;color:var(--red);min-height:16px;margin-bottom:6px;text-align:center;}
+.gate-footer{margin-top:22px;font-size:10px;color:var(--txt3);line-height:1.6;}
+.gate-badge{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;background:rgba(34,197,94,.1);border:1px solid rgba(34,197,94,.2);border-radius:20px;font-size:10px;color:var(--green);font-weight:600;margin-bottom:16px;}
 </style>
 </head>
 <body>
 
+<!-- ── Email Access Gate ── -->
+<div id="auth-gate">
+  <div class="gate-card">
+    <div class="gate-logo">📊</div>
+    <div class="gate-badge">🔒 Restricted Access</div>
+    <div class="gate-title">CSP Wallet Dashboard</div>
+    <div class="gate-sub">Sign in with your Wiom Google account.<br>Only <strong style="color:var(--blue);">@wiom.in</strong> accounts are permitted.</div>
 
-
-
-<div id="lov"><div class="spin"></div><p class="spin-lbl" id="spin-lbl">Processing…</p></div>
-<div id="toast"></div>
-
-<!-- SETTINGS MODAL -->
-<div id="sm">
-  <div class="sm-card">
-    <div class="sm-hdr">
-      <h3>🔗 Connect to Metabase</h3>
-      <button class="sm-close" onclick="closeSM()">✕</button>
+    <!-- Google One Tap / Sign-In button rendered here -->
+    <div id="g_id_onload"
+         data-client_id="164493362036-82kob6t9u1ndslmkapmd4p8m5ervnun5.apps.googleusercontent.com"
+         data-context="signin"
+         data-ux_mode="popup"
+         data-callback="handleGoogleCallback"
+         data-auto_select="false"
+         data-itp_support="true"
+         data-hd="wiom.in">
     </div>
-    <div class="sm-body">
-
-      <div style="background:var(--blue-g);border:1px solid rgba(59,130,246,.2);border-radius:var(--r);padding:10px 14px;margin-bottom:18px;font-size:12px;color:var(--blue);line-height:1.5;">
-        🔗 Fetches directly from Metabase — no file upload needed.<br>
-        <span style="color:var(--txt3);">Data auto-refreshes on schedule after connecting.</span>
+    <div class="gate-google-wrap">
+      <div class="g_id_signin"
+           data-type="standard"
+           data-shape="pill"
+           data-theme="filled_blue"
+           data-text="signin_with"
+           data-size="large"
+           data-logo_alignment="left"
+           data-width="280">
       </div>
-      <input type="hidden" id="sm-enabled" value="1">
-
-      <div class="sm-section-title">Metabase Question URL</div>
-      <div class="sm-row">
-        <label class="sm-label">Paste Question Link</label>
-        <input class="sm-inp" id="sm-qurl" type="url"
-               placeholder="https://metabase.wiom.in/question/11227-…"
-               value="https://metabase.wiom.in/question/11227-new-csp-app-partner-wallet-transaction-report-prod-db-public-t-account-balance-sheet1-new?From=&amp;To=&amp;PARTNER_ID=&amp;CSP_ID=&amp;WALLET_SOURCE=NEW_WALLET"
-               style="font-size:11px;">
-        <div class="sm-hint">Base URL and Question ID are extracted automatically</div>
-      </div>
-
-      <hr class="sm-divider">
-      <div class="sm-section-title">Login Credentials</div>
-      <div class="sm-row">
-        <label class="sm-label">Email</label>
-        <input class="sm-inp" id="sm-email" type="email"
-               placeholder="you@wiom.in" autocomplete="username">
-      </div>
-      <div class="sm-row">
-        <label class="sm-label">Password</label>
-        <input class="sm-inp" id="sm-pass" type="password"
-               placeholder="••••••••" autocomplete="current-password">
-      </div>
-
-      <hr class="sm-divider">
-      <div class="sm-row">
-        <label class="sm-label">Refresh Every</label>
-        <select class="sm-inp" id="sm-interval">
-          <option value="15">Every 15 minutes</option>
-          <option value="30">Every 30 minutes</option>
-          <option value="60" selected>Every 1 hour</option>
-          <option value="120">Every 2 hours</option>
-          <option value="240">Every 4 hours</option>
-          <option value="1440">Once a day</option>
-        </select>
-      </div>
-
-      <!-- Status message -->
-      <div class="sm-status" id="sm-status"></div>
     </div>
-    <div class="sm-footer">
-      <button class="btn btn-ghost" style="flex:1" onclick="testConnection()">🔌 Test Connection</button>
-      <button class="btn btn-pri" style="flex:1" onclick="saveSettings()">🔗 Connect &amp; Sync</button>
+
+    <div class="gate-err" id="gate-err"></div>
+    <div class="gate-footer">
+      This dashboard contains confidential financial data.<br>
+      Unauthorised access is strictly prohibited.
     </div>
   </div>
 </div>
+
+<div id="lov"><div class="spin"></div><p class="spin-lbl" id="spin-lbl">Processing…</p></div>
+<div id="toast"></div>
 
 <!-- HEADER -->
 <header class="hdr">
@@ -479,13 +450,8 @@ input[list]::-webkit-calendar-picker-indicator{opacity:0;pointer-events:none;}
     </div>
     <div class="hdr-right">
       <span class="last-upd" id="last-upd"></span>
+      <span id="auth-user-badge" style="font-size:10px;color:var(--txt3);padding:3px 9px;background:var(--bg3);border:1px solid var(--bdr);border-radius:20px;white-space:nowrap;"></span>
       <!-- Auto-sync status -->
-      <div class="sync-badge" id="sync-badge" title="Click to open settings" onclick="openSM()">
-        <span class="sdot" id="sync-dot"></span>
-        <span id="sync-lbl">Auto-sync</span>
-      </div>
-      <button class="btn btn-ghost" id="btn-sync" style="display:none;font-size:11px;" onclick="manualSync()">🔄 Sync Now</button>
-      <button class="btn btn-ghost" style="font-size:18px;padding:4px 8px;line-height:1;" onclick="openSM()" title="Auto-Sync Settings">⚙️</button>
       <button class="btn btn-success" id="btn-exp" style="display:none" onclick="exportData()">⬇ Download (.xlsx)</button>
       <label class="btn btn-warn btn-upload">
         ⬆ Upload File
@@ -495,6 +461,15 @@ input[list]::-webkit-calendar-picker-indicator{opacity:0;pointer-events:none;}
   </div>
 </header>
 
+
+<nav class="tab-nav" id="tab-nav">
+  <button class="tab-btn active" id="tbn-csp" onclick="switchTab('csp',this)">📊 CSP Wallet</button>
+  <button class="tab-btn" id="tbn-fc"  onclick="switchTab('fc',this)">💰 BASE_PAYOUT</button>
+  <button class="tab-btn" id="tbn-tds" onclick="switchTab('tds',this)">🧾 TAX_WITHHELD</button>
+  <button class="tab-btn" id="tbn-nb"  onclick="switchTab('nb',this)">🔄 RECOVERY_RETURN</button>
+  <button class="tab-btn" id="tbn-rec" onclick="switchTab('rec',this)">🔍 Reconciliation</button>
+</nav>
+<div id="tab-csp" class="tab-pane active">
 <!-- FILTER BAR -->
 <div class="filter-bar" id="filter-bar" style="display:none;">
   <div class="filter-section">
@@ -648,13 +623,13 @@ input[list]::-webkit-calendar-picker-indicator{opacity:0;pointer-events:none;}
     </div>
   </main>
 </div>
+</div><!-- /tab-csp -->
 
 <script>
 'use strict';
-/* ── CONSTANTS ─────────────────────────────── */
 const WALLET  = 'NEW_WALLET';
 const DB_NAME = 'WiomWalletDB';
-const DB_VER  = 3;
+const DB_VER  = 6;
 const STORE   = 'transactions';
 const PERIOD_LABELS = {all:'Overall',today:'Today',yest:'Yesterday',thismon:'This Month',prevmon:'Previous Month',custom:'Custom Range'};
 
@@ -662,33 +637,43 @@ const PERIOD_LABELS = {all:'Overall',today:'Today',yest:'Yesterday',thismon:'Thi
 const PIVOT_MERGE = {'WITHDRAWAL_DEBIT':'WITHDRAWAL','WITHDRAWAL':'WITHDRAWAL'};
 const pivotAction = a => PIVOT_MERGE[a] || a;
 
-/* ── STATE ─────────────────────────────────── */
 const S = {
   db:null, raw:[], filtered:[],
   expanded:{},   // action → bool (default false = collapsed)
   txnOpen:false
 };
 
-/* ── DB ────────────────────────────────────── */
 function openDB(){
   return new Promise((res,rej)=>{
     const req=indexedDB.open(DB_NAME,DB_VER);
     req.onupgradeneeded=e=>{
       const db=e.target.result;
-      if(db.objectStoreNames.contains(STORE)) db.deleteObjectStore(STORE);
-      db.createObjectStore(STORE,{keyPath:'_key'}).createIndex('date','dateISO',{unique:false});
-      if(e.oldVersion>0) sessionStorage.setItem('migrated','1');
+      const oldVer=e.oldVersion;
+      // v5: clear tds_deducted (old dedup key was wrong)
+      if(oldVer>0 && oldVer<5 && db.objectStoreNames.contains('tds_deducted'))
+        db.deleteObjectStore('tds_deducted');
+      // v6: clear transactions — dedup key changed from ID||dateISO||CSP_ID to raw ID only.
+      //     dateISO was derived via new Date() which applies timezone conversion, causing
+      //     the same transaction to generate a different key on re-upload → false duplicates.
+      if(oldVer>0 && oldVer<6 && db.objectStoreNames.contains('transactions')){
+        db.deleteObjectStore('transactions');
+        sessionStorage.setItem('migrated','1');
+      }
+      ['transactions','fixed_commission','tds_deducted','netbox_recovery'].forEach(sn=>{
+        if(!db.objectStoreNames.contains(sn))
+          db.createObjectStore(sn,{keyPath:'_key'}).createIndex('date','dateISO',{unique:false});
+      });
     };
-    req.onsuccess=e=>res(e.target.result);
-    req.onerror=e=>rej(e.target.error);
+    req.onsuccess  = e=>res(e.target.result);
+    req.onerror    = e=>rej(e.target.error);
+    req.onblocked  = ()=>rej(new Error('Database blocked — close other tabs with this dashboard open, then refresh.'));
   });
 }
-const dbAll  =db=>new Promise((r,j)=>{const q=db.transaction(STORE,'readonly').objectStore(STORE).getAll();q.onsuccess=e=>r(e.target.result);q.onerror=e=>j(e.target.error);});
-const dbCount=db=>new Promise((r,j)=>{const q=db.transaction(STORE,'readonly').objectStore(STORE).count();q.onsuccess=e=>r(e.target.result);q.onerror=e=>j(e.target.error);});
-const dbClear=db=>new Promise((r,j)=>{const q=db.transaction(STORE,'readwrite').objectStore(STORE).clear();q.onsuccess=()=>r();q.onerror=e=>j(e.target.error);});
-function dbPut(db,rows){return new Promise((r,j)=>{const tx=db.transaction(STORE,'readwrite'),st=tx.objectStore(STORE);rows.forEach(row=>st.put(row));tx.oncomplete=()=>r();tx.onerror=e=>j(e.target.error);});}
+const dbAll  =(db,sn=STORE)=>new Promise((r,j)=>{const q=db.transaction(sn,'readonly').objectStore(sn).getAll();q.onsuccess=e=>r(e.target.result);q.onerror=e=>j(e.target.error);});
+const dbCount=(db,sn=STORE)=>new Promise((r,j)=>{const q=db.transaction(sn,'readonly').objectStore(sn).count();q.onsuccess=e=>r(e.target.result);q.onerror=e=>j(e.target.error);});
+const dbClear=(db,sn=STORE)=>new Promise((r,j)=>{const q=db.transaction(sn,'readwrite').objectStore(sn).clear();q.onsuccess=()=>r();q.onerror=e=>j(e.target.error);});
+function dbPut(db,rows,sn=STORE){return new Promise((r,j)=>{const tx=db.transaction(sn,'readwrite'),st=tx.objectStore(sn);rows.forEach(row=>st.put(row));tx.oncomplete=()=>r();tx.onerror=e=>j(e.target.error);});}
 
-/* ── HELPERS ───────────────────────────────── */
 const $ =id=>document.getElementById(id);
 const sl=(m)=>{$('spin-lbl').textContent=m||'Processing…';$('lov').style.display='flex';};
 const hl=()=>{$('lov').style.display='none';};
@@ -705,7 +690,6 @@ function mLbl(d){return d.toLocaleString('en-IN',{month:'short',year:'numeric'})
 function abCls(a){const u=String(a).toUpperCase();if(u.includes('CREDIT')) return 'ab-cr';if(u.includes('DEBIT')||u.includes('WITHDRAWAL')) return 'ab-dr';if(u.includes('TRANSFER')||u.includes('REFUND')||u.includes('REVERSAL')) return 'ab-tr';return 'ab-def';}
 function ab(a){return `<span class="ab ${abCls(a)}" title="${esc(a)}">${esc(a)}</span>`;}
 
-/* ── SHOW / HIDE ───────────────────────────── */
 function showDash(){
   $('upload-landing').style.display='none';
   $('dashboard-body').style.display='block';
@@ -719,7 +703,6 @@ function showLand(){
   $('btn-exp').style.display='none';
 }
 
-/* ── DATE RANGE ────────────────────────────── */
 function getRange(){
   const p=$('f-period').value;
   const now=new Date();
@@ -746,7 +729,6 @@ function onPeriodChange(){
   applyFilters();
 }
 
-/* ── FILTERS ───────────────────────────────── */
 function onActionChange(){
   // Repopulate remarks for selected merged-action
   const fA=$('f-action').value;
@@ -811,7 +793,6 @@ function updateTitle(){
   $('pivot-sub').textContent=S.filtered.length?`${S.filtered.length.toLocaleString('en-IN')} records`:'';
 }
 
-/* ── POPULATE DROPDOWNS ───────────────────── */
 function populateDropdowns(){
   // Actions: apply PIVOT_MERGE so WITHDRAWAL_DEBIT+WITHDRAWAL → single "WITHDRAWAL" entry
   const actions=[...new Set(S.raw.map(r=>pivotAction(r.action)))].sort();
@@ -827,7 +808,6 @@ function populateDropdowns(){
   $('dl-partner').innerHTML=partners.map(v=>`<option value="${esc(v)}">`).join('');
 }
 
-/* ── COMBOBOX HELPERS ─────────────────────── */
 function onComboInput(id){
   const x=$(id+'-x');
   x.style.display=$(id).value?'block':'none';
@@ -839,7 +819,6 @@ function clearCombo(id){
   applyFilters();
 }
 
-/* ── STATS ─────────────────────────────────── */
 function updateStats(){
   const d=S.filtered;
   if(!d.length){['s-txns','s-amt','s-mon','s-act'].forEach(id=>$(id).textContent='0');return;}
@@ -856,12 +835,10 @@ function updateStats(){
   $('s-act-s').textContent=[...as_].join(' · ').slice(0,55);
 }
 
-/* ── EXPAND / COLLAPSE ─────────────────────── */
 function toggleAction(action){S.expanded[action]=!S.expanded[action];renderPivot();}
 function expandAll(){[...new Set(S.filtered.map(r=>r.action))].forEach(a=>{S.expanded[a]=true;});renderPivot();}
 function collapseAll(){[...new Set(S.filtered.map(r=>r.action))].forEach(a=>{S.expanded[a]=false;});renderPivot();}
 
-/* ── PIVOT RENDER ──────────────────────────── */
 function renderPivot(){
   const thead=$('pv-thead'),tbody=$('pv-tbody'),data=S.filtered;
   if(!data.length){
@@ -985,7 +962,6 @@ function renderPivot(){
   tbody.innerHTML=tb;
 }
 
-/* ── TRANSACTION DETAIL ─────────────────────── */
 function toggleTxn(){
   S.txnOpen=!S.txnOpen;
   $('txn-card').style.display=S.txnOpen?'block':'none';
@@ -1015,7 +991,6 @@ function renderTxn(){
   $('txn-tbody').innerHTML=tb;
 }
 
-/* ── EXPORT (multi-sheet XLSX) ──────────────── */
 function exportData(){
   const data=S.filtered;
   if(!data.length){toast('No data to export','error');return;}
@@ -1067,7 +1042,6 @@ function exportData(){
   finally{hl();}
 }
 
-/* ── FILE READING ──────────────────────────── */
 function readFile(file){
   return new Promise((res,rej)=>{
     const ext=file.name.split('.').pop().toLowerCase();
@@ -1081,7 +1055,6 @@ function readFile(file){
   });
 }
 
-/* ── NORMALISE ─────────────────────────────── */
 function normalise(rawRows){
   if(!rawRows.length) throw new Error('File is empty.');
   const keys=Object.keys(rawRows[0]);
@@ -1114,14 +1087,19 @@ function normalise(rawRows){
     const action =String(r[kAction]??'UNKNOWN').trim().toUpperCase();
     const remark =String(r[kRemark]??'').trim();
     const addedTime=String(r[kDate]??'').trim();
-    const _key=[idVal,dateISO,cspId].join('||');
+    // Dedup key: use raw transaction ID alone (always unique per wallet txn, timezone-safe).
+    // NEVER include dateISO — new Date() applies timezone conversion so the same timestamp
+    // string can produce different ISO values across browsers/locales → false duplicates daily.
+    // Fallback (no ID column): raw date string + cspId + action + amount — no Date() parsing.
+    const _key = idVal
+      ? idVal
+      : [addedTime, cspId, action, amtStr].join('||');
     rows.push({_key,action,remark,amount:parseFloat(amtStr)||0,dateISO,cspId,partnerId:partId,txnId:idVal,addedTime});
   });
   if(!rows.length) throw new Error(`No rows matched WALLET_SOURCE = ${WALLET}. Check the file.`);
   return rows;
 }
 
-/* ── LOAD FROM DB ──────────────────────────── */
 async function loadFromDB(){
   sl('Loading saved data…');
   try{
@@ -1136,7 +1114,6 @@ async function loadFromDB(){
   }finally{hl();}
 }
 
-/* ── PROCESS UPLOAD ─────────────────────────── */
 async function processFile(file,ctx){
   const ext=file.name.split('.').pop().toLowerCase();
   if(!['csv','tsv','txt','xlsx','xls'].includes(ext)){toast('Unsupported file type: .'+ext,'error');return;}
@@ -1171,367 +1148,1172 @@ async function processFile(file,ctx){
   }finally{hl();}
 }
 
-/* ── HANDLERS ──────────────────────────────── */
 function handleDrop(e){e.preventDefault();$('dzone').classList.remove('over');const f=e.dataTransfer.files[0];if(f) processFile(f,'land');}
 function handleLandUpload(e){const f=e.target.files[0];if(f) processFile(f,'land');e.target.value='';}
 function handleHdrUpload(e){const f=e.target.files[0];if(f) processFile(f,'hdr');e.target.value='';}
 
-
-/* ── METABASE AUTO-SYNC ─────────────────────── */
-const MB = { token:null, tokenTime:0, timer:null, countdownTimer:null, syncing:false, lastSync:null, nextSync:null, lastError:null };
-const MB_KEYS = { qurl:'ww_mb_qurl', email:'ww_mb_email', pass:'ww_mb_pass', interval:'ww_mb_interval', enabled:'ww_mb_enabled', lastSync:'ww_mb_last' };
-const DEFAULT_QURL = 'https://metabase.wiom.in/question/11227-new-csp-app-partner-wallet-transaction-report-prod-db-public-t-account-balance-sheet1-new?From=&To=&PARTNER_ID=&CSP_ID=&WALLET_SOURCE=NEW_WALLET';
-
-/* Parse base URL and question ID from a Metabase question URL */
-function parseQuestionURL(qurl){
-  try {
-    const u = new URL(qurl);
-    const base = u.origin;                         // https://metabase.wiom.in
-    const seg  = u.pathname.split('/').filter(Boolean); // ['question','11227-...']
-    const qSeg = seg.find(s=>/^\d+/.test(s)) || '11227';
-    const qid  = qSeg.match(/^(\d+)/)[1];          // '11227'
-    return { base, qid };
-  } catch(e){
-    return { base:'', qid:'11227' };
-  }
-}
-
-function mbCfg(){
-  const qurl = localStorage.getItem(MB_KEYS.qurl) || DEFAULT_QURL;
-  const { base, qid } = parseQuestionURL(qurl);
-  return {
-    qurl,
-    url:      base,
-    qid,
-    email:    localStorage.getItem(MB_KEYS.email)    || '',
-    pass:     localStorage.getItem(MB_KEYS.pass)     || '',
-    interval: parseInt(localStorage.getItem(MB_KEYS.interval) || '60'),
-    enabled:  localStorage.getItem(MB_KEYS.enabled)  === '1'
-  };
-}
-
-/* Settings modal open/close */
-function openSM(){
-  const c=mbCfg();
-  $('sm-qurl').value    = c.qurl || DEFAULT_QURL;
-  $('sm-email').value   = c.email;
-  $('sm-pass').value    = c.pass;
-  $('sm-interval').value= String(c.interval);
-  if(MB.lastError){
-    smStatus('Last error: '+MB.lastError,'err');
-  } else {
-    $('sm-status').style.display='none';
-  }
-  $('sm').classList.add('show');
-}
-function closeSM(){ $('sm').classList.remove('show'); }
-/* backdrop click — wired in init() after DOM ready */
-
-function smStatus(msg, type){
-  const el=$('sm-status');
-  el.textContent=msg; el.className=`sm-status ${type}`; el.style.display='block';
-}
-
-async function testConnection(){
-  const qurl=$('sm-qurl').value.trim();
-  const email=$('sm-email').value.trim();
-  const pass=$('sm-pass').value;
-  const {base:url, qid} = parseQuestionURL(qurl);
-  if(!url||!email||!pass){ smStatus('Please fill in the question URL, email, and password.','err'); return; }
-  smStatus(`Testing connection to ${url} (Question #${qid})…`,'info');
-  try {
-    const tok = await mbAuth(url, email, pass);
-    smStatus(`✅ Connected! Metabase session OK — Question #${qid} ready to sync.`,'ok');
-    MB.token = tok; MB.tokenTime = Date.now();
-  } catch(err){
-    smStatus(`❌ ${err.message}`,'err');
-  }
-}
-
-function saveSettings(){
-  const qurl=$('sm-qurl').value.trim()||DEFAULT_QURL;
-  const email=$('sm-email').value.trim();
-  const pass=$('sm-pass').value;
-  const interval=parseInt($('sm-interval').value)||60;
-  const enabled = true;
-  const {base:url} = parseQuestionURL(qurl);
-
-  if(!url||!email||!pass){
-    smStatus('Please fill in the question URL, email, and password.','err'); return;
-  }
-
-  localStorage.setItem(MB_KEYS.qurl, qurl);
-  localStorage.setItem(MB_KEYS.email, email);
-  localStorage.setItem(MB_KEYS.pass, pass);
-  localStorage.setItem(MB_KEYS.interval, interval);
-  localStorage.setItem(MB_KEYS.enabled, enabled?'1':'0');
-
-  MB.token=null; // force re-auth
-  // Always enable when credentials are saved
-  localStorage.setItem(MB_KEYS.enabled,'1');
-  closeSM();
-  startAutoSync();
-  syncFromMetabase(); // fetch immediately
-  toast('Connected! Fetching data from Metabase…','success');
-}
-
-/* Metabase auth → session token
-   Tries both field names (username / email) and both credential modes */
-async function mbAuth(url, email, pass){
-  const endpoint = `${url}/api/session`;
-  // Attempt 1: standard JSON auth with credentials included (sends browser cookies)
-  // Attempt 2: same but 'omit' credentials (no cookies)
-  // Metabase accepts both 'username' and 'email' depending on version
-  const bodies = [
-    {username: email, password: pass},
-    {email:    email, password: pass}
-  ];
-  let lastErr = '';
-  for (const creds of ['include','omit']){
-    for (const body of bodies){
-      try{
-        const r = await fetch(endpoint, {
-          method:'POST',
-          headers:{'Content-Type':'application/json'},
-          credentials: creds,
-          body: JSON.stringify(body)
-        });
-        if(r.ok){
-          const d = await r.json();
-          if(d.id) return d.id;
-        }
-        if(r.status===401||r.status===400||r.status===422){
-          const txt = await r.text().catch(()=>'');
-          lastErr = `Invalid credentials (${r.status}): ${txt.slice(0,120)}`;
-          continue; // try other body format
-        }
-        const txt = await r.text().catch(()=>'');
-        lastErr = `Auth failed (${r.status}): ${txt.slice(0,120)}`;
-      } catch(e){
-        // Network / CORS failure
-        const isCors = e instanceof TypeError && /fetch|network|CORS/i.test(e.message);
-        lastErr = isCors
-          ? 'CORS blocked — open this file from a web server (e.g. localhost) or ask your Metabase admin to allow this origin.'
-          : `Network error: ${e.message}`;
-      }
-    }
-  }
-  throw new Error(lastErr || 'Authentication failed. Check credentials.');
-}
-
-/* Fetch question as CSV text */
-async function mbFetchCSV(url, token, qid){
-  const r = await fetch(`${url}/api/card/${qid}/query/csv`, {
-    method:'POST',
-    headers:{'X-Metabase-Session':token,'Content-Type':'application/json'},
-    credentials:'include',
-    body: JSON.stringify({})
-  });
-  if(!r.ok){
-    const body = await r.text().catch(()=>'');
-    throw new Error(`Query failed (${r.status}): ${body.slice(0,120)}`);
-  }
-  return r.text();
-}
-
-/* Detect runtime environment */
-function isLocalProxy(){
-  return location.protocol==='http:' && location.hostname==='localhost' && location.port==='8765';
-}
-function isNetlify(){
-  // Running on Netlify — use serverless function endpoint
-  return location.protocol==='https:' && (
-    location.hostname.endsWith('.netlify.app') || location.hostname.endsWith('.netlify.com')
-  );
-}
-function isWebHosted(){
-  // Any real HTTP/HTTPS host (GitHub Pages, Netlify, any server) — can fetch local data file
-  return location.protocol==='https:' || (location.protocol==='http:' && location.hostname!=='');
-}
-
-/* Full sync cycle */
-async function syncFromMetabase(){
-  const cfg = mbCfg();
-  if(MB.syncing) return;
-
-  MB.syncing = true;
-  updateSyncUI('syncing');
-
-  try {
-    let csv;
-
-    if(isLocalProxy()){
-      // Running via sync_proxy.py — fetch from local proxy endpoint (no CORS)
-      const r = await fetch('/mb-sync');
-      if(!r.ok){ const msg=await r.text().catch(()=>''); throw new Error(`Proxy error: ${msg.slice(0,200)}`); }
-      csv = await r.text();
-    } else if(isNetlify()){
-      // Running on Netlify — use serverless function (server-side, no CORS)
-      const r = await fetch('/.netlify/functions/mb-sync');
-      if(!r.ok){ const msg=await r.text().catch(()=>''); throw new Error(`Netlify function error: ${msg.slice(0,200)}`); }
-      csv = await r.text();
-    } else {
-      // Direct Metabase API — requires CORS to be allowed by server
-      if(!cfg.url || !cfg.email || !cfg.pass){
-        throw new Error('No credentials. Click ⚙️ to configure, or run sync_proxy.py for automatic sync.');
-      }
-      if(!MB.token || (Date.now()-MB.tokenTime) > 12*3600*1000){
-        MB.token = await mbAuth(cfg.url, cfg.email, cfg.pass);
-        MB.tokenTime = Date.now();
-      }
-      csv = await mbFetchCSV(cfg.url, MB.token, cfg.qid);
-    }
-
-    const parsed = Papa.parse(csv_final, {header:true, skipEmptyLines:true, dynamicTyping:false});
-    const newRows = normalise(parsed.data);
-
-    const before = await dbCount(S.db);
-    await dbPut(S.db, newRows);
-    const after  = await dbCount(S.db);
-    const added  = after - before;
-
-    const dbRows = await dbAll(S.db);
-    S.raw = dbRows.map(r=>({...r, date:new Date(r.dateISO)}));
-    if(S.raw.length){ showDash(); populateDropdowns(); applyFilters(); $('btn-txn').style.display=''; }
-
-    MB.lastSync = new Date();
-    MB.nextSync = new Date(MB.lastSync.getTime() + cfg.interval*60*1000);
-    localStorage.setItem(MB_KEYS.lastSync, MB.lastSync.toISOString());
-
-    updateSyncUI('ok');
-    $('last-upd').textContent = 'Synced '+MB.lastSync.toLocaleTimeString('en-IN');
-    if(added>0) toast(`Auto-sync: ${added} new records added ✓`,'success');
-    else        toast('Auto-sync: data is up to date','info');
-
-  } catch(err){
-    MB.token = null; // force re-auth next time
-    MB.lastError = err.message;
-    MB.nextSync = new Date(Date.now() + mbCfg().interval*60*1000);
-    updateSyncUI('err', err.message);
-    console.error('Metabase sync error:', err);
-    toast('⚠️ Sync failed — click the red badge for details','error');
-  } finally {
-    MB.syncing = false;
-  }
-}
-
-function manualSync(){ MB.token=null; syncFromMetabase(); }
-
-/* Start/restart interval timer */
-function startAutoSync(){
-  if(MB.timer)      clearInterval(MB.timer);
-  if(MB.countdownTimer) clearInterval(MB.countdownTimer);
-
-  const cfg = mbCfg();
-  if(!cfg.enabled){ updateSyncUI('off'); return; }
-
-  $('btn-sync').style.display='';
-  MB.nextSync = new Date(Date.now() + cfg.interval*60*1000);
-  MB.timer = setInterval(syncFromMetabase, cfg.interval*60*1000);
-
-  // Countdown ticker every 30s
-  MB.countdownTimer = setInterval(()=>{
-    if(!MB.syncing) updateSyncUI(MB.lastSync?'ok':'off');
-  }, 30000);
-
-  updateSyncUI(MB.lastSync?'ok':'off');
-}
-
-/* Update the header sync badge */
-function updateSyncUI(state, errMsg){
-  const badge=$('sync-badge'), dot=$('sync-dot'), lbl=$('sync-lbl');
-  badge.style.display='flex';
-
-  const minsLeft = MB.nextSync ? Math.max(0,Math.round((MB.nextSync-Date.now())/60000)) : null;
-  const nextStr  = minsLeft!==null ? (minsLeft<=0?'now':`in ${minsLeft}m`) : '';
-
-  if(state==='syncing'){
-    badge.className='sync-badge syncing'; dot.className='sdot spin-dot';
-    lbl.textContent='Syncing…';
-  } else if(state==='ok'){
-    badge.className='sync-badge ok'; dot.className='sdot ok';
-    const t=MB.lastSync?MB.lastSync.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'}):'';
-    lbl.textContent=`Synced ${t}${nextStr?' · Next '+nextStr:''}`;
-  } else if(state==='err'){
-    badge.className='sync-badge err'; dot.className='sdot err';
-    lbl.textContent='Sync failed · Click to fix';
-    if(errMsg) badge.title=errMsg;
-  } else { // off
-    badge.className='sync-badge off'; dot.className='sdot off';
-    lbl.textContent='Auto-sync off';
-  }
-}
-
-/* ── INIT ──────────────────────────────────── */
 async function init(){
   sl('Initialising…');
   try{
     S.db=await openDB();
     if(sessionStorage.getItem('migrated')==='1'){sessionStorage.removeItem('migrated');$('mig').classList.add('show');}
     await loadFromDB();
-
-    // Auto-load pre-fetched data file (GitHub Pages / any web server)
-    if(isWebHosted()){
-      await autoLoadDataFile();
+    // Load sub-reports independently — errors must NOT affect CSP Wallet display
+    for(const k of ['fc','tds','nb']){
+      try{ await rptLoad(k); }
+      catch(e){ console.error('rptLoad('+k+') failed:',e); }
     }
-
-    // Auto-sync on Netlify or local proxy (Metabase API proxy)
-    if(isNetlify() || isLocalProxy()){
-      const lastISO=localStorage.getItem(MB_KEYS.lastSync);
-      if(lastISO) MB.lastSync=new Date(lastISO);
-      startAutoSync();
-      const age=MB.lastSync?Date.now()-MB.lastSync.getTime():Infinity;
-      const interval=parseInt(localStorage.getItem(MB_KEYS.interval)||'60');
-      if(age>interval*60*1000) syncFromMetabase();
-    }
-  }catch(err){hl();showLand();console.error(err);toast('Could not open database. Use Chrome or Edge.','error');}
-}
-
-/* Auto-load data/latest.csv if it exists on the server (GitHub Pages / web hosting) */
-async function autoLoadDataFile(){
-  try{
-    const r = await fetch('./data/latest.csv', {cache:'no-cache'});
-    if(!r.ok) return; // file not found — fine, skip silently
-    const csvText = await r.text();
-    if(!csvText || csvText.length < 10) return;
-
-    // Check last-sync timestamp
-    let syncTime = '';
-    try{
-      const ts = await fetch('./data/last-sync.txt',{cache:'no-cache'});
-      if(ts.ok) syncTime = (await ts.text()).trim();
-    }catch(e){}
-
-    sl('Loading latest data from server…');
-    const rows = normalise(Papa.parse(csvText,{header:true,skipEmptyLines:true,dynamicTyping:false}).data);
-    const before = await dbCount(S.db);
-    await dbPut(S.db, rows);
-    const after = await dbCount(S.db);
-    const added = after - before;
-
-    const dbRows = await dbAll(S.db);
-    S.raw = dbRows.map(r=>({...r,date:new Date(r.dateISO)}));
-    showDash();
-    populateDropdowns();
-    applyFilters();
-    $('btn-txn').style.display='';
-
-    const syncLabel = syncTime ? ' · Data as of ' + new Date(syncTime).toLocaleString('en-IN') : '';
-    $('last-upd').textContent = 'Auto-loaded' + syncLabel;
-
-    if(added>0){
-      toast(`Auto-loaded ${added} new records ✓`,'success');
-    } else {
-      toast('Data up to date','info');
-    }
-  }catch(e){
-    console.warn('[autoLoadDataFile]', e.message);
-  }finally{
+    // Pre-render reconciliation in background
+    try{ if(S.raw&&S.raw.length) renderRec(); }catch(e){}
+  }catch(err){
     hl();
+    // Only show landing if CSP data also failed to load
+    if(!S.raw||!S.raw.length) showLand();
+    console.error('init error:',err);
+    toast(err.message||'Could not open database. Use Chrome or Edge.','error');
   }
 }
 
-document.addEventListener('DOMContentLoaded', init);
+
+/* ══════════════════════════════════════════════════════
+   MULTI-REPORT ENGINE
+   ══════════════════════════════════════════════════════ */
+
+const RPT_CFG = {
+  fc:  { store:'fixed_commission',  dateField:'dateISO' },
+  tds: { store:'tds_deducted',      dateField:'dateISO' },
+  nb:  { store:'netbox_recovery',   dateField:'dateISO' }
+};
+const RPT_STATE = { fc:{raw:[],filtered:[]}, tds:{raw:[],filtered:[],expanded:{}}, nb:{raw:[],filtered:[],expanded:{}} };
+
+
+/* ── TXN TOGGLE (per-report) ─────────────────────────── */
+const RPT_TXN_OPEN = { fc:false, tds:false, nb:false };
+function rptToggleTxn(key){
+  RPT_TXN_OPEN[key] = !RPT_TXN_OPEN[key];
+  const card = document.getElementById(key+'-txn-card');
+  const btn  = document.getElementById(key+'-btn-txn');
+  if(card) card.style.display = RPT_TXN_OPEN[key] ? 'block' : 'none';
+  if(btn)  btn.textContent = RPT_TXN_OPEN[key] ? '📋 Hide Transactions' : '📋 Show Transactions';
+  if(RPT_TXN_OPEN[key] && card) card.scrollIntoView({behavior:'smooth',block:'start'});
+}
+/* ── TAB SWITCH ──────────────────────────────────────── */
+function switchTab(key, btn){
+  document.querySelectorAll('.tab-pane').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('tab-'+key).classList.add('active');
+  btn.classList.add('active');
+  // Show/hide filter bars
+  document.querySelectorAll('.rpt-filter-bar').forEach(fb=>fb.classList.remove('show'));
+  const fb = document.getElementById(key+'-filter-bar');
+  if(fb) fb.classList.add('show');
+  if(key==='rec') renderRec();
+  // Hide main filter bar unless CSP tab
+  $('filter-bar').style.display = key==='csp' ? ($('dashboard-body').style.display==='block' ? 'flex' : 'none') : 'none';
+}
+
+/* ── NORMALISE FUNCTIONS ─────────────────────────────── */
+function col(keys, ...names){
+  for(const n of names){
+    const k = keys.find(k=>k.toUpperCase()===n.toUpperCase());
+    if(k) return k;
+    const k2 = keys.find(k=>k.toUpperCase().includes(n.toUpperCase()));
+    if(k2) return k2;
+  }
+  return null;
+}
+function pf(v){ return parseFloat(String(v??'').replace(/,/g,'').trim()) || 0; }
+function ps(v){ return String(v??'').trim(); }
+
+function normalise_fc(rawRows){
+  if(!rawRows.length) throw new Error('File is empty.');
+  const keys = Object.keys(rawRows[0]);
+  const kId   = col(keys,'WALLET_ENTRY_ID');
+  const kDate = col(keys,'PAYOUT_AT');
+  const kRef  = col(keys,'REFERENCE_ID');
+  const kAmt  = col(keys,'PAYOUT_AMOUNT_RUPEES');
+  const kCsp  = col(keys,'CSP_ID');
+  const kPart = col(keys,'PARTNER_ID');
+  const kPh   = col(keys,'CUSTOMER_PHONE');
+  const kDev  = col(keys,'ISP_DEVICE_ID');
+  if(!kDate) throw new Error('PAYOUT_AT column not found. Columns: '+keys.join(', '));
+  if(!kAmt)  throw new Error('PAYOUT_AMOUNT_RUPEES column not found.');
+  const rows=[]; let skip=0;
+  rawRows.forEach(r=>{
+    const d = r[kDate] ? new Date(r[kDate]) : null;
+    if(!d||isNaN(d)){skip++;return;}
+    const dateISO = d.toISOString();
+    const walletId = kId  ? ps(r[kId])  : '';
+    const cspId    = kCsp ? ps(r[kCsp]) : '';
+    const refId    = kRef ? ps(r[kRef]) : '';
+    const type     = refId.toUpperCase().includes('INSTALL') ? 'INSTALL' : 'RETENTION';
+    const _key     = [walletId, dateISO, cspId].join('||');
+    rows.push({
+      _key, dateISO, walletEntryId:walletId, referenceId:refId, type,
+      amount: pf(r[kAmt]),
+      cspId,
+      partnerId:  kPart ? ps(r[kPart]) : '',
+      customerPhone: kPh  ? ps(r[kPh])  : '',
+      ispDeviceId:   kDev ? ps(r[kDev]) : ''
+    });
+  });
+  if(!rows.length) throw new Error('No valid rows found ('+skip+' skipped — check PAYOUT_AT date format).');
+  return rows;
+}
+
+function normalise_tds(rawRows){
+  if(!rawRows.length) throw new Error('File is empty.');
+  const keys = Object.keys(rawRows[0]);
+  const kBatch  = col(keys,'BATCH_DATE');
+  const kPosted = col(keys,'CREDIT_POSTED_AT');
+  const kType   = col(keys,'ORIGINAL_CREDIT_TYPE');
+  const kGross  = col(keys,'GROSS_INR');
+  const kTds    = col(keys,'TDS_COMPONENT_INR');
+  const kCsp    = col(keys,'CSP_ID');
+  const kEntId  = col(keys,'TDS_WALLET_ENTRY_ID');
+  const kTxnId  = col(keys,'TRANSACTION_ID_WALLET');   // unique per row — true dedup key
+  const kCrId   = col(keys,'CREDIT_TRANSACTION_ID');   // also unique; fallback
+  const kStat   = col(keys,'STATUTORY_SECTION');
+  if(!kBatch) throw new Error('BATCH_DATE column not found. Columns: '+keys.join(', '));
+  if(!kGross) throw new Error('GROSS_INR column not found.');
+  const rows=[]; let skip=0;
+  rawRows.forEach(r=>{
+    const bd = r[kBatch] ? new Date(r[kBatch]) : null;
+    if(!bd||isNaN(bd)){skip++;return;}
+    const batchDateISO   = bd.toISOString();
+    const pd = kPosted && r[kPosted] ? new Date(r[kPosted]) : null;
+    const creditPostedAtISO = (pd&&!isNaN(pd)) ? pd.toISOString() : batchDateISO;
+    const cspId      = kCsp    ? ps(r[kCsp])    : '';
+    const entId      = kEntId  ? ps(r[kEntId])  : '';
+    const creditType = kType   ? ps(r[kType])   : 'UNKNOWN';
+    const grossAmt   = pf(r[kGross]);
+    const tdsAmt     = kTds ? pf(r[kTds]) : 0;
+    // True dedup key: TRANSACTION_ID_WALLET is 100% unique per row in TDS report.
+    // TDS_WALLET_ENTRY_ID is NOT unique (one entry = many transactions).
+    const txnId = kTxnId ? ps(r[kTxnId]) : '';
+    const crId  = kCrId  ? ps(r[kCrId])  : '';
+    const _key  = txnId || crId || [batchDateISO, creditPostedAtISO, cspId, creditType,
+                  String(r[kGross]||''), String(kTds?r[kTds]||'':'')].join('||');
+    rows.push({
+      _key,
+      dateISO:           batchDateISO,   // used by period filter
+      batchDateISO,
+      creditPostedAtISO,
+      creditType,
+      grossAmount: grossAmt,
+      tdsAmount:   tdsAmt,
+      cspId,
+      statutory: kStat ? ps(r[kStat]) : ''
+    });
+  });
+  if(!rows.length) throw new Error('No valid rows found ('+skip+' skipped — check BATCH_DATE format).');
+  return rows;
+}
+
+
+function normalise_nb(rawRows){
+  if(!rawRows.length) throw new Error('File is empty.');
+  const keys = Object.keys(rawRows[0]);
+  const kDate   = col(keys,'PAYOUT_AT_IST');
+  const kType   = col(keys,'PAYOUT_TYPE');
+  const kAmt    = col(keys,'PAYOUT_AMOUNT_INR');
+  const kSec    = col(keys,'TOTAL_SECURITY');
+  const kRef    = col(keys,'REFUND_FROM_SECURITY');
+  const kRet    = col(keys,'SECURITY_RETAINED');
+  const kPick   = col(keys,'PICKUP_CHARGE');
+  const kLate   = col(keys,'LATE_FEE');
+  const kCsp    = col(keys,'CSP_ID');
+  const kDev    = col(keys,'DEVICE_ID');
+  const kPh     = col(keys,'CUSTOMER_MOBILE','CUSTOMER_PHONE');
+  const kId     = col(keys,'PAYOUT_ID');
+  if(!kDate) throw new Error('PAYOUT_AT_IST not found. Columns: '+keys.join(', '));
+  const rows=[]; let skip=0;
+  rawRows.forEach(r=>{
+    const d = r[kDate] ? new Date(r[kDate]) : null;
+    if(!d||isNaN(d)){skip++;return;}
+    const dateISO  = d.toISOString();
+    const cspId    = kCsp  ? ps(r[kCsp])  : '';
+    const payoutId = kId   ? ps(r[kId])   : '';
+    const _key = [payoutId||dateISO, dateISO, cspId].join('||');
+    rows.push({
+      _key, dateISO, cspId,
+      payoutId,
+      payoutType:         kType  ? ps(r[kType])  : 'UNKNOWN',
+      payoutAmount:       kAmt   ? pf(r[kAmt])   : 0,
+      totalSecurity:      kSec   ? pf(r[kSec])   : 0,
+      refundFromSecurity: kRef   ? pf(r[kRef])   : 0,
+      securityRetained:   kRet   ? pf(r[kRet])   : 0,
+      pickupCharge:       kPick  ? pf(r[kPick])  : 0,
+      lateFee:            kLate  ? pf(r[kLate])  : 0,
+      deviceId:           kDev   ? ps(r[kDev])   : '',
+      customerMobile:     kPh    ? ps(r[kPh])    : ''
+    });
+  });
+  if(!rows.length) throw new Error('No valid rows found ('+skip+' skipped).');
+  return rows;
+}
+
+const RPT_NORM = { fc:normalise_fc, tds:normalise_tds, nb:normalise_nb };
+
+/* ── UPLOAD HANDLERS ─────────────────────────────────── */
+function rptDrop(e,key){ e.preventDefault(); document.getElementById(key+'-dzone').classList.remove('over'); const f=e.dataTransfer.files[0]; if(f) rptProcess(f,key); }
+function rptUpload(e,key){ const f=e.target.files[0]; if(f) rptProcess(f,key); e.target.value=''; }
+
+async function rptProcess(file,key){
+  const sn = RPT_CFG[key].store;
+  const ext = file.name.split('.').pop().toLowerCase();
+  if(!['csv','tsv','txt','xlsx','xls'].includes(ext)){toast('Unsupported: .'+ext,'error');return;}
+  sl('Reading "'+file.name+'"…');
+  try{
+    const raw  = await readFile(file);
+    sl('Deduplicating & saving…');
+    const rows = RPT_NORM[key](raw);
+    const before = await dbCount(S.db,sn);
+    await dbPut(S.db,rows,sn);
+    const after = await dbCount(S.db,sn);
+    const added = after-before, dupes = rows.length-added;
+    const msg = added>0&&dupes>0 ? '✅ '+added.toLocaleString('en-IN')+' new · '+dupes.toLocaleString('en-IN')+' duplicates skipped · Total: '+after.toLocaleString('en-IN')
+               :added>0 ? '✅ '+added.toLocaleString('en-IN')+' added · Total: '+after.toLocaleString('en-IN')
+               :'ℹ️ All '+rows.length.toLocaleString('en-IN')+' rows already stored.';
+    const us=$( key+'-ustatus'); us.style.display='block'; us.className='rpt-ustatus ok'; us.textContent=msg;
+    toast(added>0?added+' new records added ✓':'All records already stored', added>0?'success':'info');
+    await rptLoad(key);
+  }catch(err){
+    const us=$(key+'-ustatus'); us.style.display='block'; us.className='rpt-ustatus err'; us.textContent='❌ '+err.message;
+    toast(err.message,'error'); console.error(err);
+  }finally{ hl(); }
+}
+
+/* ── LOAD FROM DB ────────────────────────────────────── */
+async function rptLoad(key){
+  let rows=[];
+  try{ rows = await dbAll(S.db, RPT_CFG[key].store); }
+  catch(e){ console.warn('rptLoad: could not read store "'+RPT_CFG[key].store+'":', e); }
+  RPT_STATE[key].raw = rows;
+  if(!rows.length){
+    document.getElementById(key+'-land').style.display='flex';
+    document.getElementById(key+'-dash').style.display='none';
+    document.getElementById(key+'-filter-bar').classList.remove('show');
+    return;
+  }
+  document.getElementById(key+'-land').style.display='none';
+  document.getElementById(key+'-dash').style.display='block';
+  // Only show filter bar if this tab is active
+  if(document.getElementById('tab-'+key).classList.contains('active'))
+    document.getElementById(key+'-filter-bar').classList.add('show');
+  rptPopulate(key,rows);
+  rptApply(key);
+}
+
+/* ── POPULATE DROPDOWNS ──────────────────────────────── */
+function rptPopulate(key,rows){
+  const fill=(id,vals)=>{const dl=$(id);if(!dl)return;dl.innerHTML='';[...new Set(vals)].sort().filter(Boolean).forEach(v=>{const o=document.createElement('option');o.value=v;dl.appendChild(o);});};
+  if(key==='fc'){
+    fill('fc-dl-csp',    rows.map(r=>r.cspId));
+    fill('fc-dl-partner',rows.map(r=>r.partnerId));
+    fill('fc-dl-phone',  rows.map(r=>r.customerPhone));
+    fill('fc-dl-device', rows.map(r=>r.ispDeviceId));
+  }
+  if(key==='tds'){
+    fill('tds-dl-csp', rows.map(r=>r.cspId));
+    const sel=$('tds-type'); if(sel){ const types=[...new Set(rows.map(r=>r.creditType))].sort(); sel.innerHTML='<option value="">All Types</option>'+types.map(t=>'<option>'+esc(t)+'</option>').join(''); }
+  }
+  if(key==='nb'){
+    fill('nb-dl-csp',    rows.map(r=>r.cspId));
+    fill('nb-dl-phone',  rows.map(r=>r.customerMobile));
+    fill('nb-dl-device', rows.map(r=>r.deviceId));
+    const sel=$('nb-type'); if(sel){ const types=[...new Set(rows.map(r=>r.payoutType))].sort(); sel.innerHTML='<option value="">All Types</option>'+types.map(t=>'<option>'+esc(t)+'</option>').join(''); }
+  }
+}
+
+/* ── DATE FILTER HELPERS ─────────────────────────────── */
+function rptDateRange(key,period){
+  const now=new Date(); const d=t=>t.toISOString().slice(0,10);
+  const yd=new Date(now); yd.setDate(yd.getDate()-1);
+  const fm=new Date(now.getFullYear(),now.getMonth(),1);
+  const pm1=new Date(now.getFullYear(),now.getMonth()-1,1);
+  const pm2=new Date(now.getFullYear(),now.getMonth(),0);
+  const ranges={today:[d(now),d(now)],yest:[d(yd),d(yd)],thismon:[d(fm),d(now)],prevmon:[d(pm1),d(pm2)]};
+  if(period==='custom') return [$( key+'-from').value, $(key+'-to').value];
+  return ranges[period]||[null,null];
+}
+function rptPeriodChange(key){
+  const p=$(key+'-period').value;
+  const cr=$(key+'-custom-range');
+  if(cr) cr.style.display = p==='custom'?'flex':'none';
+  if(cr) cr.style.display = p==='custom' ? 'flex' : 'none';
+  if(p!=='custom') rptApply(key);
+}
+
+/* ── APPLY FILTERS ───────────────────────────────────── */
+function rptApply(key){
+  const state = RPT_STATE[key];
+  const period = $(key+'-period').value;
+  const [from,to] = rptDateRange(key,period);
+  const cspVal = ($(key+'-csp')||{}).value||'';
+  let filtered = state.raw.filter(r=>{
+    if(from && r.dateISO < from+'T00:00:00') return false;
+    if(to   && r.dateISO > to  +'T23:59:59') return false;
+    if(cspVal && !r.cspId.toLowerCase().includes(cspVal.toLowerCase())) return false;
+    if(key==='fc'){
+      const tp = $('fc-type').value;
+      const ph = $('fc-phone').value;
+      const dv = $('fc-device').value;
+      const pt = $('fc-partner').value;
+      if(tp && r.type!==tp) return false;
+      if(ph && !r.customerPhone.includes(ph)) return false;
+      if(dv && !r.ispDeviceId.toLowerCase().includes(dv.toLowerCase())) return false;
+      if(pt && !r.partnerId.toLowerCase().includes(pt.toLowerCase())) return false;
+    }
+    if(key==='tds'){
+      const tp = $('tds-type').value;
+      if(tp && r.creditType!==tp) return false;
+    }
+    if(key==='nb'){
+      const tp = $('nb-type').value;
+      const ph = $('nb-phone').value;
+      const dv = $('nb-device').value;
+      if(tp && r.payoutType!==tp) return false;
+      if(ph && !r.customerMobile.includes(ph)) return false;
+      if(dv && !r.deviceId.toLowerCase().includes(dv.toLowerCase())) return false;
+    }
+    return true;
+  });
+  state.filtered = filtered;
+  rptRender(key);
+}
+function rptReset(key){
+  $(key+'-period').value='all';
+  const cr=$(key+'-custom-range'); if(cr) cr.style.display='none';
+  const ids={fc:['fc-csp','fc-type','fc-partner','fc-phone','fc-device'],tds:['tds-csp','tds-type'],nb:['nb-csp','nb-type','nb-phone','nb-device']};
+  (ids[key]||[]).forEach(id=>{const el=$(id);if(el)el.value='';});
+  rptApply(key);
+}
+function clearRptCombo(id,key){ const el=$(id); if(el){el.value='';} rptApply(key); }
+
+/* ── RENDER STATS CARDS ──────────────────────────────── */
+function rptStats(key,cards){
+  $(key+'-stats').innerHTML = cards.map(c=>`<div class="rpt-stat"><div class="rs-lbl">${c.label}</div><div class="rs-val ${c.cls||''}">${c.val}</div></div>`).join('');
+}
+
+/* ── RENDER: FC ──────────────────────────────────────── */
+function renderFC(){
+  const rows = RPT_STATE.fc.filtered;
+  const total = rows.length;
+  const totalAmt = rows.reduce((s,r)=>s+r.amount,0);
+  const instRows = rows.filter(r=>r.type==='INSTALL');
+  const retRows  = rows.filter(r=>r.type==='RETENTION');
+  const instAmt  = instRows.reduce((s,r)=>s+r.amount,0);
+  const retAmt   = retRows.reduce((s,r)=>s+r.amount,0);
+  const dates = rows.map(r=>r.dateISO).sort();
+
+  // Dual-stat cards: count + amount per category
+  const dualCard=(label,accent,icon,cnt,amt)=>`
+    <div class="rpt-stat" style="border-left:3px solid ${accent};position:relative;overflow:hidden;">
+      <div style="position:absolute;top:10px;right:12px;font-size:22px;opacity:.13;">${icon}</div>
+      <div class="rs-lbl" style="color:${accent};">${label}</div>
+      <div style="display:flex;flex-direction:column;gap:6px;margin-top:4px;">
+        <div style="display:flex;align-items:baseline;gap:6px;">
+          <span style="font-size:22px;font-weight:800;font-family:'SF Mono','Fira Code',monospace;color:var(--txt);">${cnt.toLocaleString('en-IN')}</span>
+          <span style="font-size:10px;color:var(--txt3);font-weight:600;text-transform:uppercase;letter-spacing:.04em;">transactions</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:5px;">
+          <span style="font-size:13px;font-weight:700;color:${accent};font-family:'SF Mono','Fira Code',monospace;">₹ ${ff(amt)}</span>
+        </div>
+      </div>
+    </div>`;
+
+  $('fc-stats').innerHTML =
+    dualCard('TOTAL PAYOUT','var(--blue)','💰',total,totalAmt) +
+    dualCard('INSTALL','var(--green)','📡',instRows.length,instAmt) +
+    dualCard('RETENTION','var(--purple)','🔒',retRows.length,retAmt);
+
+  $('fc-last-upd').textContent='Filtered: '+total.toLocaleString('en-IN')+' records';
+
+  // Monthly pivot: rows=month, cols=INSTALL count/amt | RETENTION count/amt | Total
+  const monthMap={};
+  rows.forEach(r=>{
+    const d=new Date(r.dateISO); const mk=mKey(d);
+    if(!monthMap[mk]) monthMap[mk]={label:mLbl(d),key:mk,INSTALL:{c:0,a:0},RETENTION:{c:0,a:0}};
+    monthMap[mk][r.type].c++; monthMap[mk][r.type].a+=r.amount;
+  });
+  const months=Object.values(monthMap).sort((a,b)=>a.key.localeCompare(b.key));
+
+  $('fc-pv-head').innerHTML=`
+    <tr>
+      <th class="hcol1" rowspan="2" style="text-align:left;min-width:120px;">Month</th>
+      <th colspan="2" style="text-align:center;background:rgba(34,197,94,.08);color:var(--green);">INSTALL</th>
+      <th colspan="2" style="text-align:center;background:rgba(59,130,246,.08);color:var(--blue);">RETENTION</th>
+      <th colspan="2" style="text-align:center;">Total</th>
+    </tr>
+    <tr>
+      <th>Count</th><th>Amount (₹)</th>
+      <th>Count</th><th>Amount (₹)</th>
+      <th>Count</th><th>Amount (₹)</th>
+    </tr>`;
+
+  let tb=''; let gI={c:0,a:0},gR={c:0,a:0},gT={c:0,a:0};
+  months.forEach(m=>{
+    const I=m.INSTALL,R=m.RETENTION,tc=I.c+R.c,ta=I.a+R.a;
+    gI.c+=I.c;gI.a+=I.a;gR.c+=R.c;gR.a+=R.a;gT.c+=tc;gT.a+=ta;
+    tb+=`<tr class="rpt-month-row">
+      <td class="pcol1">${esc(m.label)}</td>
+      <td class="num">${I.c.toLocaleString('en-IN')}</td><td class="num">₹${ff(I.a)}</td>
+      <td class="num">${R.c.toLocaleString('en-IN')}</td><td class="num">₹${ff(R.a)}</td>
+      <td class="num">${tc.toLocaleString('en-IN')}</td><td class="num">₹${ff(ta)}</td>
+    </tr>`;
+  });
+  tb+=`<tr class="rpt-grand-total">
+    <td class="pcol1">Grand Total</td>
+    <td class="num">${gI.c.toLocaleString('en-IN')}</td><td class="num">₹${ff(gI.a)}</td>
+    <td class="num">${gR.c.toLocaleString('en-IN')}</td><td class="num">₹${ff(gR.a)}</td>
+    <td class="num">${gT.c.toLocaleString('en-IN')}</td><td class="num">₹${ff(gT.a)}</td>
+  </tr>`;
+  $('fc-pv-body').innerHTML=tb;
+
+  // Transactions
+  const txns=[...rows].sort((a,b)=>b.dateISO.localeCompare(a.dateISO));
+  $('fc-txn-body').innerHTML=txns.map(r=>`<tr>
+    <td>${new Date(r.dateISO).toLocaleDateString('en-IN')}</td>
+    <td style="font-family:monospace;font-size:10px;color:var(--txt3);">${esc(r.walletEntryId.slice(0,16)+'…')}</td>
+    <td>${esc(r.cspId)}</td><td>${esc(r.partnerId||'—')}</td>
+    <td><span class="ab ${r.type==='INSTALL'?'ab-cr':'ab-db'}">${r.type}</span></td>
+    <td style="color:var(--txt3);font-size:11px;">${esc(r.referenceId)}</td>
+    <td>${esc(r.customerPhone||'—')}</td><td>${esc(r.ispDeviceId||'—')}</td>
+    <td class="r" style="color:var(--green);">₹${ff(r.amount)}</td>
+  </tr>`).join('');
+}
+
+/* ── RENDER: TDS ─────────────────────────────────────── */
+function renderTDS(){
+  const rows = RPT_STATE.tds.filtered;
+  if(!rows.length) return;
+
+  const totalGross = rows.reduce((s,r)=>s+r.grossAmount,0);
+  const totalTDS   = rows.reduce((s,r)=>s+r.tdsAmount,0);
+  const uniqueCSPs = new Set(rows.map(r=>r.cspId)).size;
+  const netAmt     = totalGross - totalTDS;
+
+  rptStats('tds',[
+    {label:'Total Records',  val:rows.length.toLocaleString('en-IN'),   cls:'b'},
+    {label:'Total Gross',    val:'₹ '+ff(totalGross),                   cls:'g'},
+    {label:'Total TDS',      val:'₹ '+ff(totalTDS),                     cls:'r'},
+    {label:'Net (Gross–TDS)',val:'₹ '+ff(netAmt)},
+  ]);
+  $('tds-last-upd').textContent = 'Filtered: '+rows.length.toLocaleString('en-IN')+' records';
+
+  // All unique ORIGINAL_CREDIT_TYPE values (sorted by total gross desc)
+  const typeGross = {};
+  rows.forEach(r=>{ typeGross[r.creditType]=(typeGross[r.creditType]||0)+r.grossAmount; });
+  const types = Object.keys(typeGross).sort((a,b)=>typeGross[b]-typeGross[a]);
+
+  // Build: month → { label, key, total:{gross,tds}, dates:{ dateKey → {gross,tds,byType} }, byType:{} }
+  const monthMap = {};
+  rows.forEach(r=>{
+    const bd = new Date(r.batchDateISO);
+    const mk = mKey(bd);
+    if(!monthMap[mk]) monthMap[mk]={ label:mLbl(bd), key:mk, total:{gross:0,tds:0}, byType:{}, dates:{} };
+    const m = monthMap[mk];
+    m.total.gross += r.grossAmount; m.total.tds += r.tdsAmount;
+    if(!m.byType[r.creditType]) m.byType[r.creditType]={gross:0,tds:0};
+    m.byType[r.creditType].gross += r.grossAmount;
+    m.byType[r.creditType].tds  += r.tdsAmount;
+    // Posted-date sub-rows
+    const dk = r.creditPostedAtISO.slice(0,10);
+    if(!m.dates[dk]) m.dates[dk]={ key:dk, gross:0, tds:0, byType:{} };
+    const d = m.dates[dk];
+    d.gross += r.grossAmount; d.tds += r.tdsAmount;
+    if(!d.byType[r.creditType]) d.byType[r.creditType]={gross:0,tds:0};
+    d.byType[r.creditType].gross += r.grossAmount;
+    d.byType[r.creditType].tds  += r.tdsAmount;
+  });
+
+  const months = Object.values(monthMap).sort((a,b)=>a.key.localeCompare(b.key));
+  const ex = RPT_STATE.tds.expanded;
+
+  // ── THEAD ──────────────────────────────────────────────────────────
+  let th = `<tr>
+    <th class="hcol1" rowspan="2" style="min-width:160px;text-align:left;">Month / Posted Date</th>`;
+  types.forEach(t=>{ th += `<th colspan="2" style="text-align:center;">${esc(t)}</th>`; });
+  th += `<th colspan="2" style="text-align:center;font-weight:700;color:var(--txt);">Total</th></tr><tr>`;
+  types.forEach(()=>{ th += `<th class="l">Gross (₹)</th><th style="text-align:right;color:var(--red);">TDS (₹)</th>`; });
+  th += `<th class="l" style="font-weight:700;">Gross (₹)</th><th style="text-align:right;font-weight:700;color:var(--red);">TDS (₹)</th></tr>`;
+  $('tds-pv-head').innerHTML = th;
+
+  // ── TBODY ──────────────────────────────────────────────────────────
+  const tCell = (byType, t) => {
+    const v = byType[t];
+    return v
+      ? `<td class="num">₹${ff(v.gross)}</td><td class="num" style="color:var(--red);">₹${ff(v.tds)}</td>`
+      : `<td class="num" style="color:var(--txt3);opacity:.4;">—</td><td class="num" style="color:var(--txt3);opacity:.4;">—</td>`;
+  };
+
+  let tb = '';
+  // Grand-total accumulators
+  const gByType = {}; types.forEach(t=>gByType[t]={gross:0,tds:0});
+  let gGross=0, gTds=0;
+
+  months.forEach(m=>{
+    const isExp = !!ex[m.key];
+    types.forEach(t=>{ gByType[t].gross+=(m.byType[t]?.gross||0); gByType[t].tds+=(m.byType[t]?.tds||0); });
+    gGross += m.total.gross; gTds += m.total.tds;
+
+    // Month row
+    let typeCells = types.map(t=>tCell(m.byType,t)).join('');
+    tb += `<tr class="rpt-month-row" style="cursor:pointer;" onclick="tdsToggle('${m.key}')">
+      <td class="pcol1 exp-toggle">${isExp?'▼':'▶'} ${esc(m.label)}</td>
+      ${typeCells}
+      <td class="num" style="font-weight:700;">₹${ff(m.total.gross)}</td>
+      <td class="num" style="color:var(--red);font-weight:700;">₹${ff(m.total.tds)}</td>
+    </tr>`;
+
+    // Posted-date sub-rows (only when expanded)
+    if(isExp){
+      const dateSorted = Object.values(m.dates).sort((a,b)=>a.key.localeCompare(b.key));
+      dateSorted.forEach(d=>{
+        let dCells = types.map(t=>tCell(d.byType,t)).join('');
+        const label = new Date(d.key).toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'});
+        tb += `<tr class="rpt-date-row">
+          <td class="pcol1" style="padding-left:24px;font-size:11px;color:var(--blue);">📅 ${esc(label)}</td>
+          ${dCells}
+          <td class="num">₹${ff(d.gross)}</td>
+          <td class="num" style="color:var(--red);">₹${ff(d.tds)}</td>
+        </tr>`;
+      });
+    }
+  });
+
+  // Grand total row
+  let gCells = types.map(t=>`<td class="num" style="font-weight:700;">₹${ff(gByType[t].gross)}</td><td class="num" style="color:var(--red);font-weight:700;">₹${ff(gByType[t].tds)}</td>`).join('');
+  tb += `<tr class="rpt-grand-total">
+    <td class="pcol1">Grand Total</td>
+    ${gCells}
+    <td class="num" style="font-weight:700;">₹${ff(gGross)}</td>
+    <td class="num" style="color:var(--red);font-weight:700;">₹${ff(gTds)}</td>
+  </tr>`;
+  $('tds-pv-body').innerHTML = tb;
+
+  // ── TRANSACTIONS ────────────────────────────────────────────────────
+  const txns = [...rows].sort((a,b)=>b.batchDateISO.localeCompare(a.batchDateISO));
+  $('tds-txn-body').innerHTML = txns.map((r,i)=>`<tr>
+    <td style="color:var(--txt3);font-size:11px;">${new Date(r.batchDateISO).toLocaleDateString('en-IN',{month:'short',year:'numeric'})}</td>
+    <td style="font-size:10px;color:var(--txt3);">${new Date(r.creditPostedAtISO).toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'})}</td>
+    <td>${esc(r.cspId)}</td>
+    <td><span class="ab ab-cr" style="font-size:10px;">${esc(r.creditType)}</span></td>
+    <td style="color:var(--txt3);font-size:10px;">${esc(r.statutory||'—')}</td>
+    <td class="r" style="color:var(--green);">₹${ff(r.grossAmount)}</td>
+    <td class="r" style="color:var(--red);">₹${ff(r.tdsAmount)}</td>
+  </tr>`).join('');
+}
+function tdsToggle(mk){
+  RPT_STATE.tds.expanded[mk]=!RPT_STATE.tds.expanded[mk];
+  renderTDS();
+}
+
+
+function renderNB(){
+  const rows = RPT_STATE.nb.filtered;
+  if(!rows.length) return;
+
+  const totalPayout = rows.reduce((s,r)=>s+r.payoutAmount,0);
+  const totalSec    = rows.reduce((s,r)=>s+r.totalSecurity,0);
+  const totalRetain = rows.reduce((s,r)=>s+r.securityRetained,0);
+  const uniqueCSPs  = new Set(rows.map(r=>r.cspId)).size;
+  rptStats('nb',[
+    {label:'Total Records',     val:rows.length.toLocaleString('en-IN'),  cls:'b'},
+    {label:'Recovery Return',   val:'₹ '+ff(totalPayout),                 cls:'g'},
+    {label:'Total Security',    val:'₹ '+ff(totalSec)},
+    {label:'Security Retained', val:'₹ '+ff(totalRetain),                 cls:'r'},
+  ]);
+  $('nb-last-upd').textContent = 'Filtered: '+rows.length.toLocaleString('en-IN')+' records';
+
+  // Build: month → { total, byType:{payoutType→{cnt,pa,ts,rf,sr,pc,lf}} }
+  const monthMap = {};
+  rows.forEach(r=>{
+    const d  = new Date(r.dateISO);
+    const mk = mKey(d);
+    if(!monthMap[mk]) monthMap[mk]={ label:mLbl(d), key:mk,
+      total:{cnt:0,pa:0,ts:0,rf:0,sr:0,pc:0,lf:0}, byType:{} };
+    const m = monthMap[mk];
+    m.total.cnt++; m.total.pa+=r.payoutAmount;
+    m.total.ts+=r.totalSecurity; m.total.rf+=r.refundFromSecurity;
+    m.total.sr+=r.securityRetained; m.total.pc+=r.pickupCharge; m.total.lf+=r.lateFee;
+    if(!m.byType[r.payoutType]) m.byType[r.payoutType]={cnt:0,pa:0,ts:0,rf:0,sr:0,pc:0,lf:0};
+    const t = m.byType[r.payoutType];
+    t.cnt++; t.pa+=r.payoutAmount; t.ts+=r.totalSecurity;
+    t.rf+=r.refundFromSecurity; t.sr+=r.securityRetained;
+    t.pc+=r.pickupCharge; t.lf+=r.lateFee;
+  });
+
+  const months = Object.values(monthMap).sort((a,b)=>a.key.localeCompare(b.key));
+  const ex     = RPT_STATE.nb.expanded;
+
+  // ── THEAD ──────────────────────────────────────────────────────────
+  document.getElementById('nb-pv-wrap').innerHTML = `
+    <table class="rpt-pv" id="nb-pv-table">
+      <thead>
+        <tr>
+          <th class="hcol1" rowspan="2" style="min-width:170px;text-align:left;">Month / Payout Type</th>
+          <th rowspan="2" style="text-align:right;min-width:70px;">Count</th>
+          <th rowspan="2" style="text-align:right;min-width:130px;">Recovery Return<br><span style="font-size:9px;font-weight:400;opacity:.7;">(PAYOUT_AMOUNT_INR)</span></th>
+          <th rowspan="2" style="text-align:right;min-width:115px;">Total Security</th>
+          <th rowspan="2" style="text-align:right;min-width:135px;">Refund from Security</th>
+          <th rowspan="2" style="text-align:right;min-width:125px;">Security Retained</th>
+          <th rowspan="2" style="text-align:right;min-width:110px;">Pickup Charge</th>
+          <th rowspan="2" style="text-align:right;min-width:90px;">Late Fee</th>
+        </tr>
+        <tr></tr>
+      </thead>
+      <tbody id="nb-pv-body"></tbody>
+    </table>`;
+
+  // ── Amount cell helper ─────────────────────────────────────────────
+  const amtCell = (v, cls='') =>
+    v ? `<td class="num" style="${cls}">₹${ff(v)}</td>`
+      : `<td class="num" style="color:var(--txt3);opacity:.4;">—</td>`;
+
+  const dataRow = (lbl, d, cls='', indent='') => `<tr class="${cls}">
+    <td class="pcol1" style="${indent}">${lbl}</td>
+    <td class="num">${d.cnt.toLocaleString('en-IN')}</td>
+    ${amtCell(d.pa,'color:var(--green);')}
+    ${amtCell(d.ts)}
+    ${amtCell(d.rf,'color:var(--blue);')}
+    ${amtCell(d.sr,'color:var(--red);')}
+    ${amtCell(d.pc)}
+    ${amtCell(d.lf)}
+  </tr>`;
+
+  // ── TBODY ──────────────────────────────────────────────────────────
+  let tb = '';
+  const gTot = {cnt:0,pa:0,ts:0,rf:0,sr:0,pc:0,lf:0};
+
+  months.forEach(m=>{
+    const isExp = !!ex[m.key];
+    gTot.cnt+=m.total.cnt; gTot.pa+=m.total.pa; gTot.ts+=m.total.ts;
+    gTot.rf+=m.total.rf;   gTot.sr+=m.total.sr; gTot.pc+=m.total.pc; gTot.lf+=m.total.lf;
+
+    // Month row (collapsed = shows totals)
+    tb += `<tr class="rpt-month-row" style="cursor:pointer;" onclick="nbToggle('${m.key}')">
+      <td class="pcol1 exp-toggle">${isExp?'▼':'▶'} ${esc(m.label)}</td>
+      <td class="num" style="font-weight:700;">${m.total.cnt.toLocaleString('en-IN')}</td>
+      <td class="num" style="color:var(--green);font-weight:700;">₹${ff(m.total.pa)}</td>
+      <td class="num" style="font-weight:700;">₹${ff(m.total.ts)}</td>
+      <td class="num" style="color:var(--blue);font-weight:700;">₹${ff(m.total.rf)}</td>
+      <td class="num" style="color:var(--red);font-weight:700;">₹${ff(m.total.sr)}</td>
+      <td class="num" style="font-weight:700;">₹${ff(m.total.pc)}</td>
+      <td class="num" style="font-weight:700;">₹${ff(m.total.lf)}</td>
+    </tr>`;
+
+    // PAYOUT_TYPE sub-rows when expanded
+    if(isExp){
+      const typesSorted = Object.entries(m.byType).sort((a,b)=>b[1].pa-a[1].pa);
+      typesSorted.forEach(([tp, d])=>{
+        tb += `<tr class="rpt-sub-row">
+          <td class="pcol1" style="padding-left:26px;font-size:11px;color:var(--txt2);">└ ${esc(tp)}</td>
+          <td class="num">${d.cnt.toLocaleString('en-IN')}</td>
+          <td class="num" style="color:var(--green);">₹${ff(d.pa)}</td>
+          <td class="num">${d.ts?'₹'+ff(d.ts):'<span style="opacity:.4">—</span>'}</td>
+          <td class="num" style="color:var(--blue);">${d.rf?'₹'+ff(d.rf):'<span style="opacity:.4">—</span>'}</td>
+          <td class="num" style="color:var(--red);">${d.sr?'₹'+ff(d.sr):'<span style="opacity:.4">—</span>'}</td>
+          <td class="num">${d.pc?'₹'+ff(d.pc):'<span style="opacity:.4">—</span>'}</td>
+          <td class="num">${d.lf?'₹'+ff(d.lf):'<span style="opacity:.4">—</span>'}</td>
+        </tr>`;
+      });
+    }
+  });
+
+  // Grand total row
+  tb += `<tr class="rpt-grand-total">
+    <td class="pcol1">Grand Total</td>
+    <td class="num" style="font-weight:700;">${gTot.cnt.toLocaleString('en-IN')}</td>
+    <td class="num" style="color:var(--green);font-weight:700;">₹${ff(gTot.pa)}</td>
+    <td class="num" style="font-weight:700;">₹${ff(gTot.ts)}</td>
+    <td class="num" style="color:var(--blue);font-weight:700;">₹${ff(gTot.rf)}</td>
+    <td class="num" style="color:var(--red);font-weight:700;">₹${ff(gTot.sr)}</td>
+    <td class="num" style="font-weight:700;">₹${ff(gTot.pc)}</td>
+    <td class="num" style="font-weight:700;">₹${ff(gTot.lf)}</td>
+  </tr>`;
+  $('nb-pv-body').innerHTML = tb;
+
+  // ── TRANSACTIONS ────────────────────────────────────────────────────
+  const txns = [...rows].sort((a,b)=>b.dateISO.localeCompare(a.dateISO));
+  $('nb-txn-body').innerHTML = txns.map(r=>`<tr>
+    <td style="color:var(--txt3);">${new Date(r.dateISO).toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'})}</td>
+    <td style="font-family:monospace;font-size:10px;color:var(--txt3);">${esc((r.payoutId||'—').slice(0,18))}…</td>
+    <td>${esc(r.cspId||'—')}</td>
+    <td style="font-size:11px;">${esc(r.deviceId||'—')}</td>
+    <td style="font-size:11px;">${esc(r.customerMobile||'—')}</td>
+    <td><span class="ab ab-cr" style="font-size:10px;">${esc(r.payoutType)}</span></td>
+    <td class="r" style="color:var(--green);">₹${ff(r.payoutAmount)}</td>
+    <td class="r">₹${ff(r.totalSecurity)}</td>
+    <td class="r" style="color:var(--blue);">₹${ff(r.refundFromSecurity)}</td>
+    <td class="r" style="color:var(--red);">₹${ff(r.securityRetained)}</td>
+    <td class="r">₹${ff(r.pickupCharge)}</td>
+    <td class="r">₹${ff(r.lateFee)}</td>
+  </tr>`).join('');
+}
+
+
+function nbToggle(mk){
+  RPT_STATE.nb.expanded[mk]=!RPT_STATE.nb.expanded[mk];
+  renderNB();
+}
+
+/* ── DISPATCH RENDER ─────────────────────────────────── */
+function rptRender(key){
+  if(key==='fc') renderFC();
+  else if(key==='tds') renderTDS();
+  else if(key==='nb') renderNB();
+}
+
+/* ── TRANSACTION SEARCH ──────────────────────────────── */
+function rptTxnSearch(key){
+  const q = $(key+'-txn-search').value.toLowerCase();
+  document.querySelectorAll('#'+key+'-txn-body tr').forEach(tr=>{
+    tr.style.display = !q || tr.textContent.toLowerCase().includes(q) ? '' : 'none';
+  });
+}
+
+/* ── CLEAR ALL ───────────────────────────────────────── */
+async function rptClear(key){
+  const names={fc:'Fixed Commission',tds:'TDS Calculation',nb:'Netbox Recovery'};
+  if(!confirm('⚠️ Delete ALL '+names[key]+' data?\\nThis cannot be undone.')) return;
+  sl('Clearing…');
+  try{
+    await dbClear(S.db, RPT_CFG[key].store);
+    RPT_STATE[key].raw=[]; RPT_STATE[key].filtered=[];
+    document.getElementById(key+'-land').style.display='flex';
+    document.getElementById(key+'-dash').style.display='none';
+    document.getElementById(key+'-filter-bar').classList.remove('show');
+    toast(names[key]+' data cleared.','info');
+  }finally{ hl(); }
+}
+
+
+/* ══════════════════════════════════════════════════════
+   RECONCILIATION TAB
+   ══════════════════════════════════════════════════════ */
+
+function renderRec(){
+  // ── Data availability ──────────────────────────────
+  const cspRows = S.raw||[];
+  const fcRows  = RPT_STATE.fc.raw||[];
+  const tdsRows = RPT_STATE.tds.raw||[];
+  const nbRows  = RPT_STATE.nb.raw||[];
+
+  const avail = [
+    {key:'csp', label:'CSP Wallet',        rows:cspRows, color:'var(--blue)'},
+    {key:'fc',  label:'BASE_PAYOUT',        rows:fcRows,  color:'var(--green)'},
+    {key:'tds', label:'TAX_WITHHELD',       rows:tdsRows, color:'var(--yellow,#f59e0b)'},
+    {key:'nb',  label:'RECOVERY_RETURN',    rows:nbRows,  color:'var(--red)'},
+  ];
+  $('rec-status-bar').innerHTML = avail.map(a=>
+    `<div style="display:flex;align-items:center;gap:5px;padding:4px 10px;border-radius:20px;background:var(--bg2);border:1px solid var(--bdr);font-size:11px;">
+       <span style="width:7px;height:7px;border-radius:50%;background:${a.rows.length?'var(--green)':'var(--red)'};flex-shrink:0;"></span>
+       <span style="color:var(--txt2);">${a.label}</span>
+       <span style="color:var(--txt3);">${a.rows.length.toLocaleString('en-IN')} records</span>
+     </div>`
+  ).join('');
+
+  if(!cspRows.length){
+    $('rec-stats').innerHTML='<div style="padding:40px;text-align:center;color:var(--txt3);font-size:13px;">Upload CSP Wallet data first to enable reconciliation.</div>';
+    $('rec-tbody').innerHTML='';
+    return;
+  }
+
+  // ── Build month maps ────────────────────────────────
+  // CSP Wallet: group by month + action
+  const cspMap = {};
+  cspRows.forEach(r=>{
+    const mk = mKey(r.date);
+    if(!cspMap[mk]) cspMap[mk]={bp:{cnt:0,amt:0},tw:{cnt:0,amt:0},rr:{cnt:0,amt:0}};
+    const a = (r.action||'').toUpperCase();
+    if(a==='BASE_PAYOUT')     { cspMap[mk].bp.cnt++; cspMap[mk].bp.amt+=r.amount; }
+    else if(a==='TAX_WITHHELD'){ cspMap[mk].tw.cnt++; cspMap[mk].tw.amt+=Math.abs(r.amount); }
+    else if(a==='RECOVERY_RETURN'){ cspMap[mk].rr.cnt++; cspMap[mk].rr.amt+=r.amount; }
+  });
+
+  // FC (BASE_PAYOUT report): group by month
+  const fcMap = {};
+  fcRows.forEach(r=>{
+    const mk = mKey(new Date(r.dateISO));
+    if(!fcMap[mk]) fcMap[mk]={cnt:0,amt:0};
+    fcMap[mk].cnt++; fcMap[mk].amt+=r.amount;
+  });
+
+  // TDS (TAX_WITHHELD report): group by month using BATCH_DATE
+  const tdsMap = {};
+  tdsRows.forEach(r=>{
+    const mk = mKey(new Date(r.batchDateISO||r.dateISO));
+    if(!tdsMap[mk]) tdsMap[mk]={cnt:0,amt:0};
+    tdsMap[mk].cnt++; tdsMap[mk].amt+=r.tdsAmount;
+  });
+
+  // NB (RECOVERY_RETURN report): group by month
+  const nbMap = {};
+  nbRows.forEach(r=>{
+    const mk = mKey(new Date(r.dateISO));
+    if(!nbMap[mk]) nbMap[mk]={cnt:0,amt:0};
+    nbMap[mk].cnt++; nbMap[mk].amt+=r.payoutAmount;
+  });
+
+  // Union of all months
+  const allMks = [...new Set([
+    ...Object.keys(cspMap), ...Object.keys(fcMap),
+    ...Object.keys(tdsMap), ...Object.keys(nbMap)
+  ])].sort();
+
+  // ── KPI cards ───────────────────────────────────────
+  const totals = {bp:{cAmt:0,rAmt:0},tw:{cAmt:0,rAmt:0},rr:{cAmt:0,rAmt:0}};
+  allMks.forEach(mk=>{
+    const c=cspMap[mk]||{bp:{cnt:0,amt:0},tw:{cnt:0,amt:0},rr:{cnt:0,amt:0}};
+    const fc=fcMap[mk]||{cnt:0,amt:0};
+    const tds=tdsMap[mk]||{cnt:0,amt:0};
+    const nb=nbMap[mk]||{cnt:0,amt:0};
+    totals.bp.cAmt+=c.bp.amt; totals.bp.rAmt+=fc.amt;
+    totals.tw.cAmt+=c.tw.amt; totals.tw.rAmt+=tds.amt;
+    totals.rr.cAmt+=c.rr.amt; totals.rr.rAmt+=nb.amt;
+  });
+  const bpVar=totals.bp.cAmt-totals.bp.rAmt;
+  const twVar=totals.tw.cAmt-totals.tw.rAmt;
+  const rrVar=totals.rr.cAmt-totals.rr.rAmt;
+
+  const kpiCard=(label,cAmt,rAmt,varAmt,dataOk)=>{
+    const matched=dataOk&&Math.abs(varAmt)<0.01;
+    const status=!dataOk?'<span style="color:var(--txt3);">— No report data</span>'
+      :matched?'<span style="color:var(--green);">✅ Matched</span>'
+              :'<span style="color:var(--red);">⚠️ Variance</span>';
+    return `<div class="rpt-stat" style="border-left:3px solid ${matched&&dataOk?'var(--green)':!dataOk?'var(--bdr2)':'var(--red)'};">
+      <div class="rs-lbl">${label}</div>
+      <div style="font-size:11px;color:var(--txt3);margin-bottom:6px;">${status}</div>
+      <div style="font-size:11px;display:grid;grid-template-columns:1fr 1fr;gap:4px;">
+        <div><span style="color:var(--txt3);">CSP Wallet</span><br><strong style="color:var(--txt);">₹${ff(cAmt)}</strong></div>
+        <div><span style="color:var(--txt3);">Report</span><br><strong style="color:var(--txt);">${dataOk?'₹'+ff(rAmt):'—'}</strong></div>
+      </div>
+      ${dataOk?`<div style="margin-top:6px;font-size:11px;padding:3px 7px;border-radius:4px;background:${matched?'var(--green-g)':'var(--red-g)'};color:${matched?'var(--green)':'var(--red)'};">
+        Variance: ${varAmt>=0?'+':''}₹${ff(varAmt)}</div>`:''}
+    </div>`;
+  };
+  $('rec-stats').innerHTML =
+    kpiCard('BASE_PAYOUT', totals.bp.cAmt, totals.bp.rAmt, bpVar, fcRows.length>0) +
+    kpiCard('TAX_WITHHELD', totals.tw.cAmt, totals.tw.rAmt, twVar, tdsRows.length>0) +
+    kpiCard('RECOVERY_RETURN', totals.rr.cAmt, totals.rr.rAmt, rrVar, nbRows.length>0);
+
+  // ── Build table ─────────────────────────────────────
+  const th = `<tr>
+    <th class="hcol1" rowspan="2" style="min-width:120px;text-align:left;">Month</th>
+    <th colspan="3" style="text-align:center;background:rgba(34,197,94,.07);color:var(--green);">BASE_PAYOUT</th>
+    <th colspan="3" style="text-align:center;background:rgba(245,158,11,.07);color:#f59e0b;">TAX_WITHHELD</th>
+    <th colspan="3" style="text-align:center;background:rgba(239,68,68,.07);color:var(--red);">RECOVERY_RETURN</th>
+  </tr><tr>
+    <th style="text-align:right;min-width:110px;background:rgba(34,197,94,.04);">CSP Wallet</th>
+    <th style="text-align:right;min-width:110px;background:rgba(34,197,94,.04);">FC Report</th>
+    <th style="text-align:right;min-width:90px;background:rgba(34,197,94,.04);">Variance</th>
+    <th style="text-align:right;min-width:110px;background:rgba(245,158,11,.04);">CSP Wallet</th>
+    <th style="text-align:right;min-width:110px;background:rgba(245,158,11,.04);">TDS Report</th>
+    <th style="text-align:right;min-width:90px;background:rgba(245,158,11,.04);">Variance</th>
+    <th style="text-align:right;min-width:110px;background:rgba(239,68,68,.04);">CSP Wallet</th>
+    <th style="text-align:right;min-width:110px;background:rgba(239,68,68,.04);">NB Report</th>
+    <th style="text-align:right;min-width:90px;background:rgba(239,68,68,.04);">Variance</th>
+  </tr>`;
+  $('rec-thead').innerHTML = th;
+
+  const varCell=(v,hasData)=>{
+    if(!hasData) return `<td class="num" style="color:var(--txt3);opacity:.4;">—</td>`;
+    const matched=Math.abs(v)<0.01;
+    const sign=v>=0?'+':'';
+    return `<td class="num" style="color:${matched?'var(--green)':'var(--red)'};font-weight:${matched?'400':'700'};">${matched?'✅ —':sign+'₹'+ff(v)}</td>`;
+  };
+  const amtCell=(v,col='')=>v?`<td class="num" style="${col}">₹${ff(v)}</td>`:`<td class="num" style="color:var(--txt3);opacity:.4;">—</td>`;
+
+  let tb='';
+  const gC={bp:0,fr:0,tw:0,tr2:0,rr:0,nr:0};
+  allMks.forEach(mk=>{
+    const d   = new Date(mk+'-02');
+    const c   = cspMap[mk]||{bp:{cnt:0,amt:0},tw:{cnt:0,amt:0},rr:{cnt:0,amt:0}};
+    const fc  = fcMap[mk] ||{cnt:0,amt:0};
+    const tds = tdsMap[mk]||{cnt:0,amt:0};
+    const nb  = nbMap[mk] ||{cnt:0,amt:0};
+    const bpV = c.bp.amt-fc.amt, twV=c.tw.amt-tds.amt, rrV=c.rr.amt-nb.amt;
+    const anyVar=(!fcRows.length||Math.abs(bpV)<0.01)&&(!tdsRows.length||Math.abs(twV)<0.01)&&(!nbRows.length||Math.abs(rrV)<0.01);
+    gC.bp+=c.bp.amt;gC.fr+=fc.amt;gC.tw+=c.tw.amt;gC.tr2+=tds.amt;gC.rr+=c.rr.amt;gC.nr+=nb.amt;
+    tb+=`<tr>
+      <td class="pcol1" style="font-weight:600;">${mLbl(d)}</td>
+      ${amtCell(c.bp.amt,'color:var(--txt);')}${amtCell(fc.amt,'color:var(--txt);')}${varCell(bpV,fcRows.length>0)}
+      ${amtCell(c.tw.amt,'color:var(--txt);')}${amtCell(tds.amt,'color:var(--txt);')}${varCell(twV,tdsRows.length>0)}
+      ${amtCell(c.rr.amt,'color:var(--txt);')}${amtCell(nb.amt,'color:var(--txt);')}${varCell(rrV,nbRows.length>0)}
+    </tr>`;
+  });
+
+  // Grand total row
+  const gBpV=gC.bp-gC.fr, gTwV=gC.tw-gC.tr2, gRrV=gC.rr-gC.nr;
+  tb+=`<tr class="rpt-grand-total">
+    <td class="pcol1">Grand Total</td>
+    <td class="num" style="font-weight:700;">₹${ff(gC.bp)}</td><td class="num" style="font-weight:700;">${fcRows.length?'₹'+ff(gC.fr):'—'}</td>${varCell(gBpV,fcRows.length>0)}
+    <td class="num" style="font-weight:700;">₹${ff(gC.tw)}</td><td class="num" style="font-weight:700;">${tdsRows.length?'₹'+ff(gC.tr2):'—'}</td>${varCell(gTwV,tdsRows.length>0)}
+    <td class="num" style="font-weight:700;">₹${ff(gC.rr)}</td><td class="num" style="font-weight:700;">${nbRows.length?'₹'+ff(gC.nr):'—'}</td>${varCell(gRrV,nbRows.length>0)}
+  </tr>`;
+  $('rec-tbody').innerHTML=tb;
+}
+
+/* ══════════════════════════════════════════════════════
+   RECONCILIATION — GAP TRANSACTIONS
+   ══════════════════════════════════════════════════════ */
+let REC_GAP_VISIBLE = false;
+const REC_SECTION_OPEN = { bp:true, tw:true, rr:true };
+
+function toggleRecGap(){
+  REC_GAP_VISIBLE = !REC_GAP_VISIBLE;
+  const btn  = $('rec-gap-btn');
+  const wrap = $('rec-gap-wrap');
+  if(btn)  btn.textContent = REC_GAP_VISIBLE ? '📋 Hide Gap Transactions' : '📋 Show Gap Transactions';
+  if(wrap) wrap.style.display = REC_GAP_VISIBLE ? 'block' : 'none';
+  if(REC_GAP_VISIBLE){ buildRecGap(); wrap && wrap.scrollIntoView({behavior:'smooth',block:'start'}); }
+}
+
+function toggleRecSection(key){
+  REC_SECTION_OPEN[key] = !REC_SECTION_OPEN[key];
+  const body = $('rec-sec-body-'+key);
+  const icon = $('rec-sec-icon-'+key);
+  if(body) body.style.display = REC_SECTION_OPEN[key] ? 'block' : 'none';
+  if(icon) icon.textContent   = REC_SECTION_OPEN[key] ? '▼' : '▶';
+}
+
+function buildRecGap(){
+  const cspRows = S.raw||[];
+  const fcRows  = RPT_STATE.fc.raw||[];
+  const tdsRows = RPT_STATE.tds.raw||[];
+  const nbRows  = RPT_STATE.nb.raw||[];
+
+  /* ── BASE_PAYOUT: match CSP txnId ↔ FC walletEntryId ── */
+  const fcIdSet   = new Set(fcRows.map(r=>r.walletEntryId).filter(Boolean));
+  const cspBpSet  = new Set(cspRows.filter(r=>(r.action||'').toUpperCase()==='BASE_PAYOUT').map(r=>r.txnId).filter(Boolean));
+  const bpCspOnly = fcRows.length
+    ? cspRows.filter(r=>(r.action||'').toUpperCase()==='BASE_PAYOUT' && (!r.txnId || !fcIdSet.has(r.txnId)))
+    : cspRows.filter(r=>(r.action||'').toUpperCase()==='BASE_PAYOUT');
+  const bpRptOnly = cspRows.filter(r=>(r.action||'').toUpperCase()==='BASE_PAYOUT').length
+    ? fcRows.filter(r=>!r.walletEntryId || !cspBpSet.has(r.walletEntryId))
+    : fcRows;
+
+  /* ── TAX_WITHHELD: date-based (CSP batched ≠ TDS per-txn) ─
+     CSP TAX_WITHHELD after max TDS batch date = not in report
+     TDS rows before min CSP TAX_WITHHELD date = not in CSP   */
+  const cspTwRows = cspRows.filter(r=>(r.action||'').toUpperCase()==='TAX_WITHHELD');
+  const maxTdsBatch = tdsRows.length ? tdsRows.reduce((m,r)=>r.batchDateISO>m?r.batchDateISO:m,'') : '';
+  const minCspTw    = cspTwRows.length ? cspTwRows.reduce((m,r)=>r.dateISO<m?r.dateISO:m,'9999') : '9999';
+  const twCspOnly = maxTdsBatch ? cspTwRows.filter(r=>r.dateISO > maxTdsBatch) : cspTwRows;
+  const twRptOnly = minCspTw!=='9999' ? tdsRows.filter(r=>(r.batchDateISO||r.dateISO) < minCspTw) : tdsRows;
+
+  /* ── RECOVERY_RETURN: match CSP txnId ↔ NB payoutId ── */
+  const nbIdSet   = new Set(nbRows.map(r=>r.payoutId).filter(Boolean));
+  const cspRrSet  = new Set(cspRows.filter(r=>(r.action||'').toUpperCase()==='RECOVERY_RETURN').map(r=>r.txnId).filter(Boolean));
+  const rrCspOnly = nbRows.length
+    ? cspRows.filter(r=>(r.action||'').toUpperCase()==='RECOVERY_RETURN' && (!r.txnId || !nbIdSet.has(r.txnId)))
+    : cspRows.filter(r=>(r.action||'').toUpperCase()==='RECOVERY_RETURN');
+  const rrRptOnly = cspRows.filter(r=>(r.action||'').toUpperCase()==='RECOVERY_RETURN').length
+    ? nbRows.filter(r=>!r.payoutId || !cspRrSet.has(r.payoutId))
+    : nbRows;
+
+  renderRecGapHTML({ bpCspOnly, bpRptOnly, twCspOnly, twRptOnly, rrCspOnly, rrRptOnly });
+}
+
+function renderRecGapHTML(g){
+  const fd = iso => iso ? new Date(iso).toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'}) : '—';
+  const mono = v => `<span style="font-family:monospace;font-size:10px;color:var(--txt3);">${esc(v)}</span>`;
+
+  function subTable(title, color, rows, colDefs){
+    const amt = rows.reduce((s,r)=>{
+      return s + Math.abs(r.amount||0) + (r.payoutAmount||0) + (r.tdsAmount||0);
+    }, 0);
+    if(!rows.length) return `<div class="rec-gap-sub-empty"><span style="color:${color};font-weight:600;">${title}</span> — <span style="color:var(--green);">✅ No unmatched rows</span></div>`;
+    return `
+      <div class="rec-gap-sub-hdr">
+        <span style="font-size:12px;font-weight:600;color:${color};">${title}</span>
+        <span style="font-size:11px;color:var(--txt3);">${rows.length.toLocaleString('en-IN')} rows &nbsp;·&nbsp; ₹${ff(amt)}</span>
+      </div>
+      <div style="overflow-x:auto;max-height:300px;overflow-y:auto;">
+        <table class="rpt-txn">
+          <thead><tr>${colDefs.map(c=>`<th${c.r?' class="r"':''}>${c.h}</th>`).join('')}</tr></thead>
+          <tbody>${rows.map(r=>`<tr>${colDefs.map(c=>`<td${c.r?' class="r"':''}>${c.v(r)}</td>`).join('')}</tr>`).join('')}</tbody>
+        </table>
+      </div>`;
+  }
+
+  function section(key, label, color, note, cspRows, rptRows, cspDef, rptDef){
+    const open = REC_SECTION_OPEN[key];
+    const cspAmt = cspRows.reduce((s,r)=>s+Math.abs(r.amount||0)+(r.payoutAmount||0),0);
+    const rptAmt = rptRows.reduce((s,r)=>s+(r.amount||0)+(r.payoutAmount||0)+(r.tdsAmount||0),0);
+    return `<div class="rec-gap-section">
+      <div class="rec-gap-sec-hdr" onclick="toggleRecSection('${key}')">
+        <span id="rec-sec-icon-${key}" style="font-size:10px;margin-right:8px;color:var(--txt3);">${open?'▼':'▶'}</span>
+        <span style="font-weight:700;color:${color};">${label}</span>
+        <span style="margin-left:10px;font-size:11px;color:var(--txt3);">
+          CSP-only: ${cspRows.length.toLocaleString('en-IN')} rows · ₹${ff(cspAmt)}
+          &nbsp;|&nbsp; Report-only: ${rptRows.length.toLocaleString('en-IN')} rows · ₹${ff(rptAmt)}
+        </span>
+        ${note?`<span style="margin-left:auto;font-size:10px;color:var(--txt3);font-style:italic;">${note}</span>`:''}
+      </div>
+      <div id="rec-sec-body-${key}" style="display:${open?'block':'none'};">
+        ${subTable('In CSP Wallet — not in Report', color, cspRows, cspDef)}
+        ${subTable('In Report — not in CSP Wallet', '#f59e0b', rptRows, rptDef)}
+      </div>
+    </div>`;
+  }
+
+  /* ── Column definitions ─────────────────────────── */
+  const bpCspDef = [
+    {h:'Date',           v:r=>fd(r.dateISO)},
+    {h:'Wallet TXN ID',  v:r=>mono(r.txnId||'—')},
+    {h:'CSP ID',         v:r=>esc(r.cspId||'—')},
+    {h:'Partner',        v:r=>esc(r.partnerId||'—')},
+    {h:'Remark',         v:r=>esc(r.remark||'—')},
+    {h:'Amount ₹', r:true, v:r=>`<span style="color:var(--green);">₹${ff(r.amount)}</span>`}
+  ];
+  const bpRptDef = [
+    {h:'Payout Date',    v:r=>fd(r.dateISO)},
+    {h:'Wallet Entry ID',v:r=>mono((r.walletEntryId||'—').slice(0,22)+'…')},
+    {h:'CSP ID',         v:r=>esc(r.cspId||'—')},
+    {h:'Partner',        v:r=>esc(r.partnerId||'—')},
+    {h:'Type',           v:r=>esc(r.type||'—')},
+    {h:'Ref ID',         v:r=>esc(r.referenceId||'—')},
+    {h:'Amount ₹', r:true, v:r=>`<span style="color:var(--green);">₹${ff(r.amount)}</span>`}
+  ];
+  const twCspDef = [
+    {h:'Date',           v:r=>fd(r.dateISO)},
+    {h:'TXN ID',         v:r=>mono(r.txnId||'—')},
+    {h:'CSP ID',         v:r=>esc(r.cspId||'—')},
+    {h:'Remark',         v:r=>esc(r.remark||'—')},
+    {h:'Amount ₹', r:true, v:r=>`<span style="color:var(--red);">₹${ff(Math.abs(r.amount))}</span>`}
+  ];
+  const twRptDef = [
+    {h:'Batch Date',     v:r=>fd(r.batchDateISO)},
+    {h:'Posted At',      v:r=>fd(r.creditPostedAtISO)},
+    {h:'CSP ID',         v:r=>esc(r.cspId||'—')},
+    {h:'Credit Type',    v:r=>esc(r.creditType||'—')},
+    {h:'Statutory',      v:r=>esc(r.statutory||'—')},
+    {h:'Gross ₹',  r:true, v:r=>`₹${ff(r.grossAmount)}`},
+    {h:'TDS ₹',    r:true, v:r=>`<span style="color:var(--red);">₹${ff(r.tdsAmount)}</span>`}
+  ];
+  const rrCspDef = [
+    {h:'Date',           v:r=>fd(r.dateISO)},
+    {h:'TXN ID',         v:r=>mono(r.txnId||'—')},
+    {h:'CSP ID',         v:r=>esc(r.cspId||'—')},
+    {h:'Remark',         v:r=>esc(r.remark||'—')},
+    {h:'Amount ₹', r:true, v:r=>`<span style="color:var(--blue);">₹${ff(r.amount)}</span>`}
+  ];
+  const rrRptDef = [
+    {h:'Payout Date',    v:r=>fd(r.dateISO)},
+    {h:'Payout ID',      v:r=>mono((r.payoutId||'—').slice(0,20))},
+    {h:'CSP ID',         v:r=>esc(r.cspId||'—')},
+    {h:'Payout Type',    v:r=>esc(r.payoutType||'—')},
+    {h:'Device ID',      v:r=>esc(r.deviceId||'—')},
+    {h:'Recovery Return ₹', r:true, v:r=>`<span style="color:var(--blue);">₹${ff(r.payoutAmount)}</span>`}
+  ];
+
+  $('rec-gap-detail').innerHTML =
+    section('bp','BASE_PAYOUT','var(--green)','matched on Wallet TXN ID',
+      g.bpCspOnly, g.bpRptOnly, bpCspDef, bpRptDef) +
+    section('tw','TAX_WITHHELD','#f59e0b','CSP is batched; matched by date cutoff',
+      g.twCspOnly, g.twRptOnly, twCspDef, twRptDef) +
+    section('rr','RECOVERY_RETURN','var(--red)','matched on Payout ID',
+      g.rrCspOnly, g.rrRptOnly, rrCspDef, rrRptDef);
+}
+
+/* ══════════════════════════════════════════════════════
+   GOOGLE SIGN-IN GATE  —  @wiom.in domain only
+   ══════════════════════════════════════════════════════ */
+const ALLOWED_DOMAIN = 'wiom.in';
+const AUTH_KEY       = 'wiom_auth_email';
+const AUTH_NAME_KEY  = 'wiom_auth_name';
+
+// Called by Google Identity Services after user signs in
+function handleGoogleCallback(response){
+  const errEl = document.getElementById('gate-err');
+  try {
+    // Decode JWT payload (base64url → JSON)
+    const b64 = response.credential.split('.')[1].replace(/-/g,'+').replace(/_/g,'/');
+    const payload = JSON.parse(decodeURIComponent(escape(atob(b64))));
+    const email = (payload.email||'').toLowerCase();
+    const hd    = (payload.hd||'');
+
+    // Double-check: Google hd param + actual email domain
+    if(hd !== ALLOWED_DOMAIN || !email.endsWith('@'+ALLOWED_DOMAIN)){
+      errEl.textContent = '⛔ Access denied — only @wiom.in Google accounts are allowed.';
+      return;
+    }
+    // Authenticated ✅
+    sessionStorage.setItem(AUTH_KEY, email);
+    sessionStorage.setItem(AUTH_NAME_KEY, payload.name||email);
+    document.getElementById('auth-gate').style.display = 'none';
+    const badge = document.getElementById('auth-user-badge');
+    if(badge) badge.textContent = '👤 '+(payload.name||email);
+    init();
+  } catch(e){
+    errEl.textContent = 'Sign-in failed. Please try again.';
+    console.error('Google auth error:', e);
+  }
+}
+
+function gateCheck(){
+  const email = sessionStorage.getItem(AUTH_KEY);
+  const name  = sessionStorage.getItem(AUTH_NAME_KEY);
+  if(email && email.endsWith('@'+ALLOWED_DOMAIN)){
+    document.getElementById('auth-gate').style.display = 'none';
+    const badge = document.getElementById('auth-user-badge');
+    if(badge) badge.textContent = '👤 '+(name||email);
+    return true;
+  }
+  return false;
+}
+
+document.addEventListener('DOMContentLoaded', ()=>{
+  if(gateCheck()) init();
+});
 </script>
-</body>
-</html>
+
+<!-- ════════════════════════════════════════════════
+     TAB: FIXED COMMISSION DUE & CLAIMED
+     ════════════════════════════════════════════════ -->
+<div id="tab-fc" class="tab-pane">
+
+  <!-- FC Filter Bar -->
+  <div class="rpt-filter-bar" id="fc-filter-bar">
+    <span class="flbl">Period</span>
+    <select class="fsel" id="fc-period" onchange="rptPeriodChange('fc')">
+      <option value="all">All Time</option><option value="today">Today</option>
+      <option value="yest">Yesterday</option><option value="thismon">This Month</option>
+      <option value="prevmon">Previous Month</option><option value="custom">Custom Range</option>
+    </select>
+    <div id="fc-custom-range" style="display:none;align-items:center;gap:6px;">
+      <span class="flbl">From</span><input type="date" class="fdate" id="fc-from" onchange="rptApply('fc')">
+      <span class="flbl">To</span><input type="date" class="fdate" id="fc-to" onchange="rptApply('fc')">
+    </div>
+    <div class="filter-sep"></div>
+    <span class="flbl">Type</span>
+    <select class="fsel" id="fc-type" onchange="rptApply('fc')">
+      <option value="">All Types</option>
+      <option value="INSTALL">INSTALL</option>
+      <option value="RETENTION">RETENTION</option>
+    </select>
+    <div class="filter-sep"></div>
+    <span class="flbl">CSP ID</span>
+    <div class="combo-wrap">
+      <input class="combo-inp" id="fc-csp" list="fc-dl-csp" placeholder="Paste or select…" oninput="onComboInput('fc-csp')" onchange="rptApply('fc')">
+      <datalist id="fc-dl-csp"></datalist>
+      <button class="combo-clear" onclick="clearRptCombo('fc-csp','fc')">✕</button>
+    </div>
+    <span class="flbl">Partner</span>
+    <div class="combo-wrap">
+      <input class="combo-inp" id="fc-partner" list="fc-dl-partner" placeholder="Paste or select…" oninput="onComboInput('fc-partner')" onchange="rptApply('fc')">
+      <datalist id="fc-dl-partner"></datalist>
+      <button class="combo-clear" onclick="clearRptCombo('fc-partner','fc')">✕</button>
+    </div>
+    <span class="flbl">Phone</span>
+    <div class="combo-wrap">
+      <input class="combo-inp" id="fc-phone" list="fc-dl-phone" placeholder="Search phone…" oninput="onComboInput('fc-phone')" onchange="rptApply('fc')">
+      <datalist id="fc-dl-phone"></datalist>
+      <button class="combo-clear" onclick="clearRptCombo('fc-phone','fc')">✕</button>
+    </div>
+    <span class="flbl">Device</span>
+    <div class="combo-wrap">
+      <input class="combo-inp" id="fc-device" list="fc-dl-d
